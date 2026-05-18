@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greek Transliteration Keyboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=Source+Sans+Pro:wght@400;600;700&family=Noto+Serif:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#2a2118;--ink-light:#5c4d3c;--ink-faint:#8a7a68;
+  --bg:#f5f0e8;--bg-mid:#e8dfd2;--bg-deep:#d9cdb9;
+  --card-bg:#fff;--card-border:#e8dfd2;
+  --accent:#8b3a3a;--accent-soft:#c4787825;
+  --link:#6b4c8a;
+  --correct:#4a7a4e;
+  --toggle-bg:#d9cdb9;--toggle-knob:#fff;
+  --th-border:#d9cdb9;--td-border:#e8dfd2;
+}
+[data-theme="dark"]{
+  --ink:#e0d8cc;--ink-light:#b8ac9a;--ink-faint:#887c6c;
+  --bg:#1a1614;--bg-mid:#252018;--bg-deep:#302920;
+  --card-bg:#221e1a;--card-border:#3a332a;
+  --accent:#c47878;--accent-soft:#c4787828;
+  --link:#a88cc4;
+  --correct:#7daa82;
+  --toggle-bg:#3a332a;--toggle-knob:#e0d8cc;
+  --th-border:#3a332a;--td-border:#302920;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans Pro',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased;transition:background .35s,color .35s}
+.container{max-width:680px;margin:0 auto;padding:40px 20px 100px}
+
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.theme-toggle-label{font-size:12px;font-weight:600;color:var(--ink-faint);letter-spacing:.04em}
+.toggle-track{width:44px;height:24px;background:var(--toggle-bg);border-radius:12px;position:relative;transition:background .35s}
+.toggle-knob{width:18px;height:18px;background:var(--toggle-knob);border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .35s,background .35s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-icon{position:absolute;font-size:12px;top:4px;transition:opacity .25s}
+.toggle-icon.sun{right:5px;opacity:1}.toggle-icon.moon{left:5px;opacity:0}
+[data-theme="dark"] .toggle-knob{transform:translateX(20px)}
+[data-theme="dark"] .toggle-icon.sun{opacity:0}
+[data-theme="dark"] .toggle-icon.moon{opacity:1}
+
+header{text-align:center;margin-bottom:24px}
+header h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.2;margin-bottom:6px}
+header p{font-size:14px;color:var(--ink-faint)}
+
+/* Input */
+.input-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:6px}
+.latin-input{width:100%;font-family:'Source Sans Pro',sans-serif;font-size:20px;padding:14px 16px;border:2px solid var(--card-border);border-radius:10px;background:var(--card-bg);color:var(--ink);outline:none;transition:border-color .2s,background .35s;resize:vertical;min-height:60px}
+.latin-input:focus{border-color:var(--accent)}
+.latin-input::placeholder{color:var(--ink-faint);font-size:16px}
+
+/* Output */
+.output-area{margin-top:16px;margin-bottom:24px}
+.output-box{position:relative;background:var(--card-bg);border:2px solid var(--card-border);border-radius:10px;padding:14px 16px;min-height:60px;transition:background .35s,border-color .35s}
+.output-text{font-family:'Noto Serif',serif;font-size:24px;color:var(--accent);letter-spacing:.03em;line-height:1.6;word-break:break-word;min-height:1.6em}
+.output-text.empty{font-family:'Source Sans Pro',sans-serif;font-size:16px;color:var(--ink-faint);letter-spacing:0}
+.copy-btn{position:absolute;top:10px;right:10px;padding:6px 14px;font-family:'Source Sans Pro',sans-serif;font-size:12px;font-weight:600;background:var(--bg-mid);color:var(--ink-light);border:1px solid var(--bg-deep);border-radius:6px;cursor:pointer;transition:all .2s}
+.copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.copy-btn.copied{background:var(--correct);color:#fff;border-color:var(--correct)}
+
+/* Live preview */
+.live-hint{font-size:12px;color:var(--ink-faint);margin-top:6px;text-align:right;font-style:italic}
+
+/* Reference */
+.ref-section{margin-top:8px}
+.ref-toggle{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;cursor:pointer;user-select:none;font-size:14px;font-weight:600;color:var(--ink-light);border-radius:8px;transition:color .2s}
+.ref-toggle:hover{color:var(--accent)}
+.ref-toggle .arrow{transition:transform .2s;display:inline-block}
+.ref-toggle .arrow.open{transform:rotate(180deg)}
+.ref-content{display:none;margin-top:12px}
+.ref-content.show{display:block}
+
+.ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:16px}
+.ref-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:6px;transition:background .35s}
+.ref-key{font-family:'Source Sans Pro',sans-serif;font-size:15px;font-weight:700;color:var(--ink);min-width:20px;text-align:center}
+.ref-arrow{color:var(--ink-faint);font-size:12px}
+.ref-greek{font-family:'Noto Serif',serif;font-size:20px;color:var(--accent)}
+.ref-name{font-size:11px;color:var(--ink-faint)}
+
+.ref-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+.ref-table th{font-family:'Cormorant Garamond',serif;font-weight:600;text-align:left;padding:6px 10px;border-bottom:2px solid var(--th-border);color:var(--ink-light);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.ref-table td{padding:6px 10px;border-bottom:1px solid var(--td-border);color:var(--ink-light)}
+.ref-table td:first-child{font-weight:700;color:var(--ink);font-family:monospace;font-size:15px}
+.ref-table .gc{font-family:'Noto Serif',serif;font-size:18px;color:var(--accent)}
+
+.ref-sub{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--ink-light);margin:16px 0 8px}
+
+.info-box{background:var(--card-bg);border-radius:8px;border:1px solid var(--card-border);padding:14px 18px;margin:16px 0;transition:background .35s,border-color .35s}
+.info-box p{font-size:13.5px;color:var(--ink-light);margin-bottom:6px;line-height:1.5}
+.info-box p:last-child{margin-bottom:0}
+.info-box code{font-family:monospace;background:var(--bg-mid);padding:1px 5px;border-radius:3px;font-size:13px}
+
+@media(max-width:500px){
+  .container{padding:32px 14px 80px}
+  header h1{font-size:26px}
+  .latin-input{font-size:18px}
+  .output-text{font-size:20px}
+  .ref-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .theme-toggle{top:10px;right:10px}
+  .theme-toggle-label{display:none}
+  .home-link{top:10px;left:10px}
+}
+.home-link{position:fixed;top:16px;left:16px;z-index:100;font-size:12px;font-weight:600;color:var(--ink-faint);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.home-link:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<a class="home-link" href="index.html">&#8592; Home</a>
+
+<div class="theme-toggle" onclick="toggleTheme()" role="button" tabindex="0">
+  <span class="theme-toggle-label">Dark mode</span>
+  <div class="toggle-track">
+    <span class="toggle-icon sun">&#9788;</span>
+    <span class="toggle-icon moon">&#9790;</span>
+    <div class="toggle-knob"></div>
+  </div>
+</div>
+
+<div class="container">
+<header>
+  <h1>Type Latin, Get Greek</h1>
+  <p>Type with your normal keyboard &mdash; see Ancient Greek appear in real time. Works offline.</p>
+</header>
+
+<div>
+  <div class="input-label">Type here (Latin characters)</div>
+  <textarea class="latin-input" id="latinInput" placeholder='Try typing: anthropos or hippos or lo/gos' rows="3" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+</div>
+
+<div class="output-area">
+  <div class="input-label">Greek output</div>
+  <div class="output-box">
+    <div class="output-text empty" id="greekOutput">Greek will appear here as you type&hellip;</div>
+    <button class="copy-btn" id="copyBtn" onclick="copyGreek()">Copy</button>
+  </div>
+  <div class="live-hint">Final sigma (&#962;) is automatic at end of words</div>
+</div>
+
+<div class="ref-section">
+  <div class="ref-toggle" onclick="toggleRef()">
+    <span>Keyboard Map</span>
+    <span class="arrow" id="refArrow">&#9660;</span>
+  </div>
+  <div class="ref-content" id="refContent">
+
+    <div class="ref-sub">Letters</div>
+    <div class="ref-grid">
+      <div class="ref-item"><span class="ref-key">a</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&alpha;</span><span class="ref-name">alpha</span></div>
+      <div class="ref-item"><span class="ref-key">b</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&beta;</span><span class="ref-name">beta</span></div>
+      <div class="ref-item"><span class="ref-key">g</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&gamma;</span><span class="ref-name">gamma</span></div>
+      <div class="ref-item"><span class="ref-key">d</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&delta;</span><span class="ref-name">delta</span></div>
+      <div class="ref-item"><span class="ref-key">e</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&epsilon;</span><span class="ref-name">epsilon</span></div>
+      <div class="ref-item"><span class="ref-key">z</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&zeta;</span><span class="ref-name">zeta</span></div>
+      <div class="ref-item"><span class="ref-key">j</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&eta;</span><span class="ref-name">eta</span></div>
+      <div class="ref-item"><span class="ref-key">th</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&theta;</span><span class="ref-name">theta</span></div>
+      <div class="ref-item"><span class="ref-key">i</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&iota;</span><span class="ref-name">iota</span></div>
+      <div class="ref-item"><span class="ref-key">k</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&kappa;</span><span class="ref-name">kappa</span></div>
+      <div class="ref-item"><span class="ref-key">l</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&lambda;</span><span class="ref-name">lambda</span></div>
+      <div class="ref-item"><span class="ref-key">m</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&mu;</span><span class="ref-name">mu</span></div>
+      <div class="ref-item"><span class="ref-key">n</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&nu;</span><span class="ref-name">nu</span></div>
+      <div class="ref-item"><span class="ref-key">x</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&xi;</span><span class="ref-name">xi</span></div>
+      <div class="ref-item"><span class="ref-key">o</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&omicron;</span><span class="ref-name">omicron</span></div>
+      <div class="ref-item"><span class="ref-key">p</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&pi;</span><span class="ref-name">pi</span></div>
+      <div class="ref-item"><span class="ref-key">r</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&rho;</span><span class="ref-name">rho</span></div>
+      <div class="ref-item"><span class="ref-key">s</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&sigma;/&sigmaf;</span><span class="ref-name">sigma</span></div>
+      <div class="ref-item"><span class="ref-key">t</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&tau;</span><span class="ref-name">tau</span></div>
+      <div class="ref-item"><span class="ref-key">u</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&upsilon;</span><span class="ref-name">upsilon</span></div>
+      <div class="ref-item"><span class="ref-key">ph</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&phi;</span><span class="ref-name">phi</span></div>
+      <div class="ref-item"><span class="ref-key">kh</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&chi;</span><span class="ref-name">chi</span></div>
+      <div class="ref-item"><span class="ref-key">ps</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&psi;</span><span class="ref-name">psi</span></div>
+      <div class="ref-item"><span class="ref-key">w</span><span class="ref-arrow">&rarr;</span><span class="ref-greek">&omega;</span><span class="ref-name">omega</span></div>
+    </div>
+    <div class="info-box">
+      <p><strong>Uppercase:</strong> Type a capital letter to get the uppercase Greek form. <code>A</code> &rarr; &Alpha;, <code>W</code> &rarr; &Omega;, <code>Th</code> &rarr; &Theta;, etc.</p>
+      <p><strong>The h key:</strong> <code>h</code> adds rough breathing. It works <em>both directions</em>: after a vowel (<code>ah</code> &rarr; &#x1F01;) or before one (<code>ha</code> &rarr; &#x1F01;, <code>hippos</code> &rarr; &#x1F35;&#x03C0;&#x03C0;&#x03BF;&#x03C2;). When preceded by <code>t</code>, <code>p</code>, or <code>k</code>, it forms a digraph instead: <code>th</code> &rarr; &theta;, <code>ph</code> &rarr; &phi;, <code>kh</code> &rarr; &chi;.</p>
+      <p><strong>Also available:</strong> Single-key shortcuts still work: <code>q</code> &rarr; &theta;, <code>f</code> &rarr; &phi;, <code>c</code> &rarr; &chi;, <code>y</code> &rarr; &psi; (for when you don&rsquo;t want to type the digraph).</p>
+    </div>
+
+    <div class="ref-sub">Diacriticals (type after a vowel)</div>
+    <table class="ref-table">
+      <thead><tr><th>Type</th><th>Mark</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>/</td><td>Acute accent (&acute;)</td><td><code>a/</code> &rarr; <span class="gc">&alpha;&#769;</span></td></tr>
+        <tr><td>\</td><td>Grave accent (`)</td><td><code>a\</code> &rarr; <span class="gc">&#x1F70;</span></td></tr>
+        <tr><td>=</td><td>Circumflex (˜)</td><td><code>a=</code> &rarr; <span class="gc">&#x1FB6;</span></td></tr>
+        <tr><td>h</td><td>Rough breathing (&#703;)</td><td><code>ah</code> &rarr; <span class="gc">&#x1F01;</span></td></tr>
+        <tr><td>)</td><td>Smooth breathing (&#702;)</td><td><code>a)</code> &rarr; <span class="gc">&#x1F00;</span></td></tr>
+        <tr><td>|</td><td>Iota subscript</td><td><code>a|</code> &rarr; <span class="gc">&#x1FB3;</span></td></tr>
+        <tr><td>:</td><td>Diaeresis (&uml;)</td><td><code>i:</code> &rarr; <span class="gc">&#x03CA;</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="info-box">
+      <p><strong>Stack them!</strong> Modifiers combine in any order. <code>ah/</code> &rarr; <span style="font-family:'Noto Serif';font-size:20px;color:var(--accent)">&#x1F05;</span> (rough + acute). <code>j=|</code> &rarr; <span style="font-family:'Noto Serif';font-size:20px;color:var(--accent)">&#x1FC7;</span> (eta + circumflex + iota subscript).</p>
+      <p><strong>Rough breathing on rho:</strong> <code>rh</code> &rarr; <span style="font-family:'Noto Serif';font-size:20px;color:var(--accent)">&#x1FE5;</span> (word-initial rho). This doesn&rsquo;t conflict with digraphs since <code>rh</code> isn&rsquo;t one.</p>
+      <p><strong><code>(</code> still works</strong> for rough breathing too, if you prefer: <code>a(</code> and <code>ah</code> do the same thing.</p>
+      <p><strong>Final sigma</strong> is automatic &mdash; any &sigma; at the end of a word becomes &sigmaf;.</p>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+var latinToGreek = {
+  'a':'\u03B1','b':'\u03B2','g':'\u03B3','d':'\u03B4','e':'\u03B5','z':'\u03B6',
+  'j':'\u03B7','q':'\u03B8','i':'\u03B9','k':'\u03BA','l':'\u03BB',
+  'm':'\u03BC','n':'\u03BD','x':'\u03BE','o':'\u03BF','p':'\u03C0','r':'\u03C1',
+  's':'\u03C3','t':'\u03C4','u':'\u03C5','f':'\u03C6','c':'\u03C7','y':'\u03C8','w':'\u03C9',
+  'A':'\u0391','B':'\u0392','G':'\u0393','D':'\u0394','E':'\u0395','Z':'\u0396',
+  'J':'\u0397','Q':'\u0398','I':'\u0399','K':'\u039A','L':'\u039B',
+  'M':'\u039C','N':'\u039D','X':'\u039E','O':'\u039F','P':'\u03A0','R':'\u03A1',
+  'S':'\u03A3','T':'\u03A4','U':'\u03A5','F':'\u03A6','C':'\u03A7','Y':'\u03A8','W':'\u03A9'
+};
+
+var diacritMap = {
+  '/': 0x0301,  // acute
+  '\\': 0x0300, // grave
+  '=': 0x0342,  // circumflex (perispomeni)
+  '(': 0x0314,  // rough breathing
+  ')': 0x0313,  // smooth breathing
+  '|': 0x0345,  // iota subscript
+  ':': 0x0308   // diaeresis
+};
+
+var vowelBases = '\u03B1\u03B5\u03B7\u03B9\u03BF\u03C5\u03C9\u0391\u0395\u0397\u0399\u039F\u03A5\u03A9';
+// rho can also take breathing marks
+var breathableRho = '\u03C1\u03A1';
+
+function isVowelOrRho(ch){
+  return vowelBases.indexOf(ch) >= 0 || breathableRho.indexOf(ch) >= 0;
+}
+function isVowel(ch){
+  return vowelBases.indexOf(ch) >= 0;
+}
+
+function convert(latin){
+  var result = [];
+  var pendingRough = false; // h before a vowel queues rough breathing
+  
+  // Digraph mappings (checked before single letters)
+  var digraphs = {
+    'th':'\u03B8','ph':'\u03C6','kh':'\u03C7','ps':'\u03C8',
+    'Th':'\u0398','Ph':'\u03A6','Kh':'\u03A7','Ps':'\u03A8',
+    'TH':'\u0398','PH':'\u03A6','KH':'\u03A7','PS':'\u03A8'
+  };
+  
+  for(var i = 0; i < latin.length; i++){
+    var ch = latin[i];
+    var next = i + 1 < latin.length ? latin[i+1] : '';
+    var pair = ch + next;
+    
+    // Check for digraphs first
+    if(digraphs[pair]){
+      result.push(digraphs[pair]);
+      i++; // skip next char
+      continue;
+    }
+    
+    // Check if h/H is used for rough breathing
+    if(ch === 'h' || ch === 'H'){
+      // Try to apply to last vowel/rho in result (stop at word boundaries)
+      var targetIdx = -1;
+      for(var ri = result.length - 1; ri >= 0; ri--){
+        if(' .,;:!?\n'.indexOf(result[ri]) >= 0) break;
+        var baseChar = getBaseChar(result[ri]);
+        if(isVowelOrRho(baseChar)){ targetIdx = ri; break; }
+      }
+      if(targetIdx >= 0){
+        result[targetIdx] = addDiacritical(result[targetIdx], 0x0314);
+      } else {
+        // No preceding vowel — queue it for the next vowel
+        pendingRough = true;
+      }
+      continue;
+    }
+    
+    // Check if it's a diacritical modifier
+    if(diacritMap[ch] !== undefined){
+      var combCode = diacritMap[ch];
+      var targetIdx = -1;
+      for(var ri = result.length - 1; ri >= 0; ri--){
+        if(' .,;:!?\n'.indexOf(result[ri]) >= 0) break;
+        var baseChar = getBaseChar(result[ri]);
+        if(combCode === 0x0314 || combCode === 0x0313){
+          if(isVowelOrRho(baseChar)){ targetIdx = ri; break; }
+        } else {
+          if(isVowel(baseChar)){ targetIdx = ri; break; }
+        }
+      }
+      if(targetIdx >= 0){
+        result[targetIdx] = addDiacritical(result[targetIdx], combCode);
+      }
+      continue;
+    }
+    
+    // Check if it's a letter to convert
+    if(latinToGreek[ch]){
+      var greekChar = latinToGreek[ch];
+      // If there's a pending rough breathing and this is a vowel or rho, apply it
+      if(pendingRough){
+        var base = greekChar.normalize('NFD')[0];
+        if(isVowelOrRho(base)){
+          greekChar = addDiacritical(greekChar, 0x0314);
+          pendingRough = false;
+        }
+      }
+      result.push(greekChar);
+      continue;
+    }
+    
+    // Pass through everything else
+    pendingRough = false; // clear pending on non-letter input
+    result.push(ch);
+  }
+  
+  // Apply final sigma
+  return applyFinalSigma(result.join(''));
+}
+
+function getBaseChar(s){
+  var nfd = s.normalize('NFD');
+  return nfd[0] || '';
+}
+
+function addDiacritical(charStr, combCode){
+  var nfd = charStr.normalize('NFD');
+  
+  // Remove conflicting diacriticals of same category
+  var filtered = nfd[0];
+  for(var i = 1; i < nfd.length; i++){
+    var existing = nfd.charCodeAt(i);
+    // Accent category: acute, grave, circumflex
+    if((combCode === 0x0301 || combCode === 0x0300 || combCode === 0x0342) &&
+       (existing === 0x0301 || existing === 0x0300 || existing === 0x0342)){
+      continue; // skip conflicting accent
+    }
+    // Breathing category: smooth, rough
+    if((combCode === 0x0313 || combCode === 0x0314) &&
+       (existing === 0x0313 || existing === 0x0314)){
+      continue; // skip conflicting breathing
+    }
+    // Skip duplicate
+    if(existing === combCode) continue;
+    
+    filtered += nfd[i];
+  }
+  
+  // Add new combining mark after base char
+  // Canonical ordering: breathing marks should come before accents
+  // Simple approach: add and let NFC handle ordering
+  filtered = filtered[0] + String.fromCharCode(combCode) + filtered.slice(1);
+  
+  return filtered.normalize('NFC');
+}
+
+function applyFinalSigma(text){
+  // Replace σ at end of word (before space, punctuation, or end) with ς
+  return text.replace(/\u03C3(?=[\s\.,;:!\?\-\u00B7]|$)/g, '\u03C2');
+}
+
+// ═══════ LIVE CONVERSION ═══════
+var inp = document.getElementById('latinInput');
+var out = document.getElementById('greekOutput');
+
+inp.addEventListener('input', function(){
+  var val = this.value;
+  if(!val){
+    out.textContent = 'Greek will appear here as you type\u2026';
+    out.className = 'output-text empty';
+    return;
+  }
+  var greek = convert(val);
+  out.textContent = greek;
+  out.className = 'output-text';
+});
+
+// Also handle paste
+inp.addEventListener('paste', function(){
+  var self = this;
+  setTimeout(function(){
+    var e = new Event('input');
+    self.dispatchEvent(e);
+  }, 0);
+});
+
+function copyGreek(){
+  var text = document.getElementById('greekOutput').textContent;
+  if(!text || text.indexOf('will appear') >= 0) return;
+  
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(function(){
+      showCopied();
+    }).catch(function(){
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text){
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); showCopied(); }catch(e){}
+  document.body.removeChild(ta);
+}
+
+function showCopied(){
+  var btn = document.getElementById('copyBtn');
+  btn.textContent = 'Copied!';
+  btn.classList.add('copied');
+  setTimeout(function(){
+    btn.textContent = 'Copy';
+    btn.classList.remove('copied');
+  }, 1500);
+}
+
+function toggleRef(){
+  var content = document.getElementById('refContent');
+  var arrow = document.getElementById('refArrow');
+  var show = !content.classList.contains('show');
+  content.classList.toggle('show', show);
+  arrow.classList.toggle('open', show);
+}
+
+function toggleTheme(){
+  var h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);
+  try{localStorage.setItem('greek-plan-theme',n)}catch(e){}
+}
+try{
+  var s=localStorage.getItem('greek-plan-theme');
+  if(s==='dark')document.documentElement.setAttribute('data-theme','dark');
+  else if(!s&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');
+}catch(e){}
+</script>
+</body>
+</html>

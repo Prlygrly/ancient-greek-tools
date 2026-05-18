@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Greek Alphabet: Letters, Names &amp; Sounds</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Sans+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2a2118;--ink-light:#5c4d3c;--ink-faint:#8a7a68;--bg:#f5f0e8;--bg-mid:#e8dfd2;--bg-deep:#d9cdb9;--card-bg:#fff;--card-border:#e8dfd2;--accent:#8b3a3a;--accent-soft:#c4787830;--link:#6b4c8a;--vowel:#5b6e8a;--vowel-bg:#5b6e8a12;--vowel-border:#5b6e8a20;--consonant:#7a6b3e;--consonant-bg:#7a6b3e10;--consonant-border:#7a6b3e18;--highlight:#c44a4a;--toggle-bg:#d9cdb9;--toggle-knob:#fff;--th-border:#d9cdb9;--td-border:#e8dfd2}
+[data-theme="dark"]{--ink:#e0d8cc;--ink-light:#b8ac9a;--ink-faint:#887c6c;--bg:#1a1614;--bg-mid:#252018;--bg-deep:#302920;--card-bg:#221e1a;--card-border:#3a332a;--accent:#c47878;--accent-soft:#c4787825;--link:#a88cc4;--vowel:#7a9ac0;--vowel-bg:#5b6e8a15;--vowel-border:#5b6e8a28;--consonant:#b8a868;--consonant-bg:#7a6b3e12;--consonant-border:#7a6b3e25;--highlight:#d49090;--toggle-bg:#3a332a;--toggle-knob:#e0d8cc;--th-border:#3a332a;--td-border:#302920}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans Pro',sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;font-size:16px;-webkit-font-smoothing:antialiased;transition:background .35s,color .35s}
+.container{max-width:900px;margin:0 auto;padding:50px 24px 100px}
+.theme-toggle{position:fixed;top:20px;right:20px;z-index:100;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.theme-toggle-label{font-size:13px;font-weight:600;color:var(--ink-faint);letter-spacing:.04em}
+.toggle-track{width:48px;height:26px;background:var(--toggle-bg);border-radius:13px;position:relative;transition:background .35s}
+.toggle-knob{width:20px;height:20px;background:var(--toggle-knob);border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .35s,background .35s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-icon{position:absolute;font-size:13px;top:4.5px;transition:opacity .25s}
+.toggle-icon.sun{right:6px;opacity:1}.toggle-icon.moon{left:6px;opacity:0}
+[data-theme="dark"] .toggle-knob{transform:translateX(22px)}
+[data-theme="dark"] .toggle-icon.sun{opacity:0}
+[data-theme="dark"] .toggle-icon.moon{opacity:1}
+header{text-align:center;margin-bottom:44px;padding-bottom:36px;border-bottom:1px solid var(--bg-deep);position:relative}
+header::after{content:'\u03B1\u03B2\u03B3';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 12px;color:var(--ink-faint);font-size:14px;letter-spacing:6px;transition:background .35s}
+h1{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:700;line-height:1.15;margin-bottom:12px}
+.subtitle{font-size:15px;color:var(--ink-light);max-width:520px;margin:0 auto}
+h2{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;margin-bottom:6px;line-height:1.25;text-align:center}
+.section-sub{text-align:center;color:var(--ink-faint);font-size:14px;margin-bottom:24px}
+.info-box{background:var(--card-bg);border-radius:8px;border:1px solid var(--card-border);padding:18px 22px;margin:0 0 36px;transition:background .35s,border-color .35s}
+.info-box p{font-size:14.5px;color:var(--ink-light);margin-bottom:6px}
+.info-box p:last-child{margin-bottom:0}
+.dialect-toggle{display:flex;justify-content:center;gap:0;margin-bottom:24px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;overflow:hidden;max-width:300px;margin-left:auto;margin-right:auto;transition:background .35s,border-color .35s}
+.dialect-btn{flex:1;padding:10px 16px;font-family:'Source Sans Pro',sans-serif;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--ink-faint)}
+.dialect-btn:hover{color:var(--ink)}
+.dialect-btn.active{background:var(--accent);color:#fff}
+[data-theme="dark"] .dialect-btn.active{color:#1a1614}
+.letter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:48px}
+.letter-card{background:var(--card-bg);border-radius:10px;border:1px solid var(--card-border);padding:22px 20px 18px;transition:background .35s,border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+.letter-card:hover{border-color:var(--bg-deep);box-shadow:0 3px 14px rgba(0,0,0,.04)}
+.letter-card.vowel{border-left:3px solid var(--vowel)}
+.letter-card.consonant{border-left:3px solid var(--consonant)}
+.card-type{position:absolute;top:10px;right:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px}
+.card-type.v-tag{background:var(--vowel-bg);color:var(--vowel)}
+.card-type.c-tag{background:var(--consonant-bg);color:var(--consonant)}
+.card-letters{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+.card-upper{font-family:'Noto Serif',serif;font-size:48px;font-weight:700;color:var(--ink);line-height:1}
+.card-lower{font-family:'Noto Serif',serif;font-size:48px;font-weight:400;color:var(--accent);line-height:1}
+.card-lower-alt{font-family:'Noto Serif',serif;font-size:36px;font-weight:400;color:var(--ink-faint);line-height:1}
+.card-names{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--td-border)}
+.card-name-row{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+.card-name-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);min-width:28px}
+.card-name-greek{font-family:'Noto Serif',serif;font-size:20px;color:var(--ink);letter-spacing:.03em}
+.card-sound{font-size:14.5px;color:var(--ink-light);line-height:1.55}
+.card-sound .hl{color:var(--highlight);font-weight:700}
+.card-sound .note{font-style:italic;color:var(--ink-faint);font-size:13px}
+.diphthong-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:48px}
+.diph-card{background:var(--card-bg);border-radius:10px;border:1px solid var(--card-border);border-left:3px solid var(--link);padding:22px 20px 18px;transition:background .35s,border-color .2s}
+.diph-card:hover{border-color:var(--bg-deep);box-shadow:0 3px 14px rgba(0,0,0,.04)}
+.diph-letters{font-family:'Noto Serif',serif;font-size:42px;font-weight:400;color:var(--accent);line-height:1;margin-bottom:10px}
+.diph-name{font-family:'Noto Serif',serif;font-size:16px;color:var(--ink-light);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--td-border)}
+.diph-sound{font-size:14.5px;color:var(--ink-light);line-height:1.55}
+.diph-sound .hl{color:var(--highlight);font-weight:700}
+.diph-sound .note{font-style:italic;color:var(--ink-faint);font-size:13px}
+.divider{text-align:center;margin:44px 0;color:var(--ink-faint);font-size:18px;letter-spacing:12px}
+.diacrit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:32px}
+.diacrit-card{background:var(--card-bg);border-radius:10px;border:1px solid var(--card-border);border-left:3px solid var(--accent);padding:22px 20px 18px;transition:background .35s,border-color .2s}
+.diacrit-card:hover{border-color:var(--bg-deep);box-shadow:0 3px 14px rgba(0,0,0,.04)}
+.diacrit-header{display:flex;align-items:baseline;gap:14px;margin-bottom:10px}
+.diacrit-symbol{font-family:'Noto Serif',serif;font-size:44px;color:var(--accent);line-height:1}
+.diacrit-meta{flex:1}
+.diacrit-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.diacrit-greek-name{font-family:'Noto Serif',serif;font-size:15px;color:var(--ink-faint)}
+.diacrit-desc{font-size:14.5px;color:var(--ink-light);line-height:1.6;padding-top:8px;border-top:1px solid var(--td-border)}
+.diacrit-desc .hl{color:var(--highlight);font-weight:700}
+.diacrit-example{margin-top:10px;padding:10px 14px;background:var(--vowel-bg);border-radius:6px;font-size:14px;color:var(--ink-light)}
+.diacrit-example .ex-greek{font-family:'Noto Serif',serif;font-size:22px;color:var(--accent);font-weight:500;letter-spacing:.04em}
+.diacrit-example .ex-arrow{color:var(--ink-faint);margin:0 6px}
+.diacrit-example .ex-meaning{color:var(--ink-light)}
+@media(max-width:600px){.container{padding:36px 14px 72px}h1{font-size:30px}.letter-grid,.diphthong-grid,.diacrit-grid{grid-template-columns:1fr}.theme-toggle{top:12px;right:12px}.theme-toggle-label{display:none}.home-link{top:12px;left:12px}}
+.home-link{position:fixed;top:20px;left:20px;z-index:100;font-size:13px;font-weight:600;color:var(--ink-faint);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.home-link:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+<a class="home-link" href="index.html">&#8592; Home</a>
+<div class="theme-toggle" onclick="toggleTheme()" role="button" tabindex="0"><span class="theme-toggle-label">Dark mode</span><div class="toggle-track"><span class="toggle-icon sun">&#9788;</span><span class="toggle-icon moon">&#9790;</span><div class="toggle-knob"></div></div></div>
+<div class="container">
+<header>
+  <h1>&#932;&#8056; &#7944;&#955;&#966;&#940;&#946;&#951;&#964;&#959;&#957;</h1>
+  <p class="subtitle">The Greek alphabet &mdash; every letter, its Greek name, and an English word containing the sound.</p>
+</header>
+<div class="dialect-toggle">
+  <button class="dialect-btn active" id="rBtnA" onclick="setRefDialect('attic')">Classical Attic</button>
+  <button class="dialect-btn" id="rBtnK" onclick="setRefDialect('koine')">Koine</button>
+</div>
+<div class="info-box" id="introBox"></div>
+<section>
+  <h2>The 24 Letters</h2>
+  <p class="section-sub">&Alpha;&lambda;&phi;&alpha; to &Omega;&mu;&epsilon;&gamma;&alpha;</p>
+  <div class="letter-grid" id="letterGrid"></div>
+</section>
+<div class="divider">&middot; &middot; &middot;</div>
+<section>
+  <h2>Common Diphthongs</h2>
+  <p class="section-sub">Two vowels combined into one sound</p>
+  <div class="diphthong-grid" id="diphGrid"></div>
+  <div class="info-box" id="aspirBox"></div>
+</section>
+<div class="divider">&middot; &middot; &middot;</div>
+<section>
+  <h2>Diacritical Marks</h2>
+  <p class="section-sub">The little commas, slashes, and dots above (and below) the letters</p>
+  <div class="info-box"><p>Ancient Greek texts use several small marks above and below vowels to indicate breathing, pitch accent, and other features. You&rsquo;ll encounter them immediately when reading, so it&rsquo;s worth recognizing them early.</p></div>
+  <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink-light);margin:32px 0 14px">Breathing Marks</h3>
+  <p style="font-size:15px;color:var(--ink-light);margin-bottom:16px">Every word beginning with a vowel (or &rho;) gets one of these.</p>
+  <div class="diacrit-grid">
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#7936;</span><div class="diacrit-meta"><div class="diacrit-name">Smooth Breathing</div><div class="diacrit-greek-name">&psi;&iota;&lambda;&#8052; &pi;&rho;&omicron;&sigma;&#8179;&delta;&#943;&alpha;</div></div></div><div class="diacrit-desc">Looks like a little <span class="hl">&#702;</span> (curved right). Means <strong>no &ldquo;h&rdquo; sound</strong>.<div class="diacrit-example"><span class="ex-greek">&#7952;&nu;</span> <span class="ex-arrow">=</span> <span class="ex-meaning">&ldquo;en&rdquo; (in)</span></div></div></div>
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#7945;</span><div class="diacrit-meta"><div class="diacrit-name">Rough Breathing</div><div class="diacrit-greek-name">&delta;&alpha;&sigma;&epsilon;&#8150;&alpha; &pi;&rho;&omicron;&sigma;&#8179;&delta;&#943;&alpha;</div></div></div><div class="diacrit-desc">Looks like a little <span class="hl">&#703;</span> (curved left). Means <strong>add an &ldquo;h&rdquo; sound</strong>.<div class="diacrit-example"><span class="ex-greek">&#8017;&pi;&#972;</span> <span class="ex-arrow">=</span> <span class="ex-meaning">&ldquo;hypo&rdquo; (under)</span></div></div></div>
+  </div>
+  <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink-light);margin:32px 0 14px">Accent Marks</h3>
+  <div class="diacrit-grid">
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#940;</span><div class="diacrit-meta"><div class="diacrit-name">Acute Accent</div><div class="diacrit-greek-name">&#8000;&xi;&epsilon;&#8150;&alpha;</div></div></div><div class="diacrit-desc">Slash rising right: <span class="hl">&acute;</span>. Pitch <strong>rises</strong> on this syllable.<div class="diacrit-example"><span class="ex-greek">&lambda;&#972;&gamma;&omicron;&sigmaf;</span> <span class="ex-arrow">=</span> <span class="ex-meaning">&ldquo;l&oacute;gos&rdquo; (word)</span></div></div></div>
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#8048;</span><div class="diacrit-meta"><div class="diacrit-name">Grave Accent</div><div class="diacrit-greek-name">&beta;&alpha;&rho;&epsilon;&#8150;&alpha;</div></div></div><div class="diacrit-desc">Slash falling right: <span class="hl">`</span>. Replaces acute on last syllable in connected speech &mdash; pitch stays <strong>level</strong>.<div class="diacrit-example"><span class="ex-greek">&kappa;&alpha;&lambda;&#8056;&sigmaf; &kappa;&alpha;&#8054; &#7936;&gamma;&alpha;&theta;&#972;&sigmaf;</span></div></div></div>
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#8118;</span><div class="diacrit-meta"><div class="diacrit-name">Circumflex</div><div class="diacrit-greek-name">&pi;&epsilon;&rho;&iota;&sigma;&pi;&omega;&mu;&#941;&nu;&eta;</div></div></div><div class="diacrit-desc">Small arc: <span class="hl">&#770;</span>. Pitch <strong>rises then falls</strong> on one syllable. Only on long vowels/diphthongs.<div class="diacrit-example"><span class="ex-greek">&mu;&#8118;&lambda;&lambda;&omicron;&nu;</span> <span class="ex-arrow">=</span> <span class="ex-meaning">&ldquo;m&acirc;llon&rdquo; (more)</span></div></div></div>
+  </div>
+  <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink-light);margin:32px 0 14px">Other Marks</h3>
+  <div class="diacrit-grid">
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#8115;</span><div class="diacrit-meta"><div class="diacrit-name">Iota Subscript</div><div class="diacrit-greek-name">&#8017;&pi;&omicron;&gamma;&epsilon;&gamma;&rho;&alpha;&mu;&mu;&#941;&nu;&eta;</div></div></div><div class="diacrit-desc">Tiny <span class="hl">&iota;</span> written <strong>under</strong> &alpha;, &eta;, or &omega;. A silent remnant of an old diphthong. In uppercase, written next to the letter instead (&Alpha;&Iota;, &Eta;&Iota;, &Omega;&Iota;).<div class="diacrit-example"><span class="ex-greek">&tau;&#8135; &theta;&epsilon;&#8119;</span> <span class="ex-arrow">=</span> <span class="ex-meaning">&ldquo;to the goddess&rdquo; (dative)</span></div></div></div>
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#970;</span><div class="diacrit-meta"><div class="diacrit-name">Diaeresis</div><div class="diacrit-greek-name">&delta;&iota;&alpha;&#943;&rho;&epsilon;&sigma;&iota;&sigmaf;</div></div></div><div class="diacrit-desc">Two dots <span class="hl">&uml;</span> over &iota; or &upsilon;. Signals this vowel is <strong>separate</strong> from the preceding vowel, not a diphthong.<div class="diacrit-example"><span class="ex-greek">&pi;&rho;&omicron;&#970;&#941;&nu;&alpha;&iota;</span> <span class="ex-arrow">=</span> <span class="ex-meaning">&ldquo;pro-ienai&rdquo; (to go forward)</span></div></div></div>
+    <div class="diacrit-card"><div class="diacrit-header"><span class="diacrit-symbol">&#7940;</span><div class="diacrit-meta"><div class="diacrit-name">Combinations</div><div class="diacrit-greek-name">Breathing + accent together</div></div></div><div class="diacrit-desc">Breathing and accent marks frequently stack on the same vowel. All six combos:<div class="diacrit-example" style="line-height:2.2"><span class="ex-greek">&#7940;</span> smooth+acute &emsp;<span class="ex-greek">&#7938;</span> smooth+grave &emsp;<span class="ex-greek">&#7942;</span> smooth+circ.<br><span class="ex-greek">&#7945;</span> rough+acute &emsp;<span class="ex-greek">&#7946;</span> rough+grave &emsp;<span class="ex-greek">&#7950;</span> rough+circ.</div></div></div>
+  </div>
+  <div class="info-box"><p><strong>Don&rsquo;t panic.</strong> The breathing marks and acute accent account for the vast majority of what you&rsquo;ll see. The rest becomes second nature after a few weeks of reading.</p></div>
+</section>
+</div>
+<script>
+var refDialect='attic';
+var letterInfo=[
+  {u:'\u0391',l:'\u03B1',nL:'\u1F04\u03BB\u03C6\u03B1',nU:'\u0391\u039B\u03A6\u0391',t:'v',
+   a:{s:'Like the <span class="hl">a</span> in \u201Cf<span class="hl">a</span>ther\u201D',n:'Short or long depending on context'},
+   k:{s:'Like the <span class="hl">a</span> in \u201Cf<span class="hl">a</span>ther\u201D',n:'Short or long depending on context'}},
+  {u:'\u0392',l:'\u03B2',nL:'\u03B2\u1FC6\u03C4\u03B1',nU:'\u0392\u0397\u03A4\u0391',t:'c',
+   a:{s:'Like the <span class="hl">b</span> in \u201C<span class="hl">b</span>ed\u201D',n:'Hard B in classical; became V in later Greek'},
+   k:{s:'Like the <span class="hl">v</span> in \u201C<span class="hl">v</span>ine\u201D',n:'Shifted from classical \u201Cb\u201D to \u201Cv\u201D'}},
+  {u:'\u0393',l:'\u03B3',nL:'\u03B3\u03AC\u03BC\u03BC\u03B1',nU:'\u0393\u0391\u039C\u039C\u0391',t:'c',
+   a:{s:'Like the <span class="hl">g</span> in \u201C<span class="hl">g</span>et\u201D',n:'Always hard G, never soft'},
+   k:{s:'Soft fricative <span class="hl">g</span> (gargle-like)',n:'Still hard g before \u03B3/\u03BA/\u03BE/\u03C7'}},
+  {u:'\u0394',l:'\u03B4',nL:'\u03B4\u03AD\u03BB\u03C4\u03B1',nU:'\u0394\u0395\u039B\u03A4\u0391',t:'c',
+   a:{s:'Like the <span class="hl">d</span> in \u201C<span class="hl">d</span>og\u201D',n:''},
+   k:{s:'Like the <span class="hl">th</span> in \u201C<span class="hl">th</span>e\u201D',n:'Shifted from \u201Cd\u201D to soft \u201Cth\u201D'}},
+  {u:'\u0395',l:'\u03B5',nL:'\u1F14\u03C8\u03B9\u03BB\u03CC\u03BD',nU:'\u0395\u03A8\u0399\u039B\u039F\u039D',t:'v',
+   a:{s:'Like the <span class="hl">e</span> in \u201Cb<span class="hl">e</span>d\u201D',n:'Always short'},
+   k:{s:'Like the <span class="hl">e</span> in \u201Cb<span class="hl">e</span>d\u201D',n:'Always short'}},
+  {u:'\u0396',l:'\u03B6',nL:'\u03B6\u1FC6\u03C4\u03B1',nU:'\u0396\u0397\u03A4\u0391',t:'c',
+   a:{s:'Like the <span class="hl">dz</span> in \u201Ca<span class="hl">dz</span>e\u201D',n:'Debated: possibly /dz/, /zd/, or /z/'},
+   k:{s:'Like the <span class="hl">z</span> in \u201C<span class="hl">z</span>one\u201D',n:'Simplified from classical \u201Cdz\u201D'}},
+  {u:'\u0397',l:'\u03B7',nL:'\u1F26\u03C4\u03B1',nU:'\u0397\u03A4\u0391',t:'v',
+   a:{s:'Like the <span class="hl">ai</span> in \u201Ch<span class="hl">ai</span>r\u201D (open, long)',n:'Always long. NOT the English letter H!'},
+   k:{s:'Like the <span class="hl">ee</span> in \u201Cm<span class="hl">ee</span>t\u201D',n:'Merged toward iota (iotacism). NOT the English letter H!'}},
+  {u:'\u0398',l:'\u03B8',nL:'\u03B8\u1FC6\u03C4\u03B1',nU:'\u0398\u0397\u03A4\u0391',t:'c',
+   a:{s:'Aspirated T: the <span class="hl">t</span> in \u201C<span class="hl">t</span>op\u201D (with puff of air)',n:'NOT \u201Cth\u201D as in \u201Cthink\u201D \u2014 that came later'},
+   k:{s:'Like the <span class="hl">th</span> in \u201C<span class="hl">th</span>ink\u201D',n:'No longer aspirated \u2014 now a true fricative'}},
+  {u:'\u0399',l:'\u03B9',nL:'\u1F30\u1FF6\u03C4\u03B1',nU:'\u0399\u03A9\u03A4\u0391',t:'v',
+   a:{s:'Short: <span class="hl">i</span> in \u201Cb<span class="hl">i</span>t\u201D \u00B7 Long: <span class="hl">ee</span> in \u201Cm<span class="hl">ee</span>t\u201D',n:'Short or long depending on context'},
+   k:{s:'Like the <span class="hl">ee</span> in \u201Cm<span class="hl">ee</span>t\u201D',n:''}},
+  {u:'\u039A',l:'\u03BA',nL:'\u03BA\u03AC\u03C0\u03C0\u03B1',nU:'\u039A\u0391\u03A0\u03A0\u0391',t:'c',
+   a:{s:'Like the <span class="hl">k</span> in \u201Cs<span class="hl">k</span>ip\u201D (no puff of air)',n:'Unaspirated \u2014 unlike the K in \u201Ckit\u201D'},
+   k:{s:'Like the <span class="hl">k</span> in \u201Cs<span class="hl">k</span>ip\u201D',n:''}},
+  {u:'\u039B',l:'\u03BB',nL:'\u03BB\u03AC\u03BC\u03B2\u03B4\u03B1',nU:'\u039B\u0391\u039C\u0392\u0394\u0391',t:'c',
+   a:{s:'Like the <span class="hl">l</span> in \u201C<span class="hl">l</span>amp\u201D',n:''},k:{s:'Like the <span class="hl">l</span> in \u201C<span class="hl">l</span>amp\u201D',n:''}},
+  {u:'\u039C',l:'\u03BC',nL:'\u03BC\u1FE6',nU:'\u039C\u03A5',t:'c',
+   a:{s:'Like the <span class="hl">m</span> in \u201C<span class="hl">m</span>ap\u201D',n:''},k:{s:'Like the <span class="hl">m</span> in \u201C<span class="hl">m</span>ap\u201D',n:''}},
+  {u:'\u039D',l:'\u03BD',nL:'\u03BD\u1FE6',nU:'\u039D\u03A5',t:'c',
+   a:{s:'Like the <span class="hl">n</span> in \u201C<span class="hl">n</span>et\u201D',n:'Looks like English V \u2014 it\u2019s not!'},
+   k:{s:'Like the <span class="hl">n</span> in \u201C<span class="hl">n</span>et\u201D',n:'Looks like English V \u2014 it\u2019s not!'}},
+  {u:'\u039E',l:'\u03BE',nL:'\u03BE\u1FD6',nU:'\u039E\u0399',t:'c',
+   a:{s:'Like the <span class="hl">x</span> in \u201Cbo<span class="hl">x</span>\u201D (a \u201Cks\u201D sound)',n:'One letter for /ks/'},
+   k:{s:'Like the <span class="hl">x</span> in \u201Cbo<span class="hl">x</span>\u201D (a \u201Cks\u201D sound)',n:'One letter for /ks/'}},
+  {u:'\u039F',l:'\u03BF',nL:'\u1F44\u03BC\u03B9\u03BA\u03C1\u03CC\u03BD',nU:'\u039F\u039C\u0399\u039A\u03A1\u039F\u039D',t:'v',
+   a:{s:'Like the <span class="hl">o</span> in \u201Cp<span class="hl">o</span>t\u201D',n:'Always short \u2014 \u201Csmall o\u201D (\u03BF-\u03BC\u03B9\u03BA\u03C1\u03CC\u03BD)'},
+   k:{s:'Like the <span class="hl">o</span> in \u201Cp<span class="hl">o</span>t\u201D',n:'Always short'}},
+  {u:'\u03A0',l:'\u03C0',nL:'\u03C0\u1FD6',nU:'\u03A0\u0399',t:'c',
+   a:{s:'Like the <span class="hl">p</span> in \u201Cs<span class="hl">p</span>in\u201D (no puff of air)',n:'Unaspirated \u2014 unlike the P in \u201Cpin\u201D'},
+   k:{s:'Like the <span class="hl">p</span> in \u201Cs<span class="hl">p</span>in\u201D',n:''}},
+  {u:'\u03A1',l:'\u03C1',nL:'\u1FE5\u1FF6',nU:'\u03A1\u03A9',t:'c',
+   a:{s:'A trilled <span class="hl">r</span>, like in \u201C<span class="hl">r</span>ed\u201D (Spanish style)',n:'Looks like English P \u2014 it\u2019s R!'},
+   k:{s:'A trilled or tapped <span class="hl">r</span>',n:'Looks like English P \u2014 it\u2019s R!'}},
+  {u:'\u03A3',l:'\u03C3',nL:'\u03C3\u03AF\u03B3\u03BC\u03B1',nU:'\u03A3\u0399\u0393\u039C\u0391',t:'c',alt:'\u03C2',
+   a:{s:'Like the <span class="hl">s</span> in \u201C<span class="hl">s</span>un\u201D',n:'Two lowercase forms: \u03C3 (middle) and \u03C2 (end of word)'},
+   k:{s:'Like the <span class="hl">s</span> in \u201C<span class="hl">s</span>un\u201D',n:'Two lowercase forms: \u03C3 (middle) and \u03C2 (end of word)'}},
+  {u:'\u03A4',l:'\u03C4',nL:'\u03C4\u03B1\u1FE6',nU:'\u03A4\u0391\u03A5',t:'c',
+   a:{s:'Like the <span class="hl">t</span> in \u201Cs<span class="hl">t</span>op\u201D (no puff of air)',n:'Unaspirated \u2014 unlike the T in \u201Ctop\u201D'},
+   k:{s:'Like the <span class="hl">t</span> in \u201Cs<span class="hl">t</span>op\u201D',n:''}},
+  {u:'\u03A5',l:'\u03C5',nL:'\u1F54\u03C8\u03B9\u03BB\u03CC\u03BD',nU:'\u03A5\u03A8\u0399\u039B\u039F\u039D',t:'v',
+   a:{s:'Like French <span class="hl">u</span> in \u201Ct<span class="hl">u</span>\u201D or German \u201C\u00FC\u201D',n:'No exact English equivalent. Round lips for \u201Coo\u201D but say \u201Cee\u201D'},
+   k:{s:'Like the <span class="hl">ee</span> in \u201Cm<span class="hl">ee</span>t\u201D',n:'Merged toward iota in Koine'}},
+  {u:'\u03A6',l:'\u03C6',nL:'\u03C6\u1FD6',nU:'\u03A6\u0399',t:'c',
+   a:{s:'Aspirated P: the <span class="hl">p</span> in \u201C<span class="hl">p</span>in\u201D (with puff of air)',n:'NOT \u201Cf\u201D as in \u201Cphone\u201D \u2014 that came later'},
+   k:{s:'Like the <span class="hl">f</span> in \u201C<span class="hl">f</span>un\u201D',n:'No longer aspirated \u2014 now a true fricative'}},
+  {u:'\u03A7',l:'\u03C7',nL:'\u03C7\u1FD6',nU:'\u03A7\u0399',t:'c',
+   a:{s:'Aspirated K: the <span class="hl">k</span> in \u201C<span class="hl">k</span>id\u201D (with puff of air)',n:'NOT \u201Cch\u201D as in \u201CBach\u201D \u2014 that came later'},
+   k:{s:'Like the <span class="hl">ch</span> in Scottish \u201Clo<span class="hl">ch</span>\u201D',n:'No longer aspirated \u2014 now a true fricative'}},
+  {u:'\u03A8',l:'\u03C8',nL:'\u03C8\u1FD6',nU:'\u03A8\u0399',t:'c',
+   a:{s:'Like the <span class="hl">ps</span> in \u201Cti<span class="hl">ps</span>\u201D or \u201Cla<span class="hl">ps</span>e\u201D',n:'One letter for /ps/'},
+   k:{s:'Like the <span class="hl">ps</span> in \u201Cti<span class="hl">ps</span>\u201D or \u201Cla<span class="hl">ps</span>e\u201D',n:'One letter for /ps/'}},
+  {u:'\u03A9',l:'\u03C9',nL:'\u1F60\u03BC\u03AD\u03B3\u03B1',nU:'\u03A9\u039C\u0395\u0393\u0391',t:'v',
+   a:{s:'Like the <span class="hl">o</span> in \u201Cb<span class="hl">o</span>ne\u201D (open, long)',n:'Always long \u2014 \u201Cbig o\u201D (\u03C9-\u03BC\u03AD\u03B3\u03B1)'},
+   k:{s:'Like the <span class="hl">o</span> in \u201Cb<span class="hl">o</span>ne\u201D (open, long)',n:'Always long'}}
+];
+
+var diphInfo=[
+  {g:'\u03B1\u03B9',n:'alpha + iota',
+   a:'Like the <span class="hl">ai</span> in \u201C<span class="hl">ai</span>sle\u201D or the <span class="hl">i</span> in \u201Cl<span class="hl">i</span>ght\u201D',
+   k:'Like the <span class="hl">e</span> in \u201Cb<span class="hl">e</span>d\u201D<br><span class="note">Monophthongized from classical \u201Cai\u201D</span>'},
+  {g:'\u03B5\u03B9',n:'epsilon + iota',
+   a:'Like the <span class="hl">ei</span> in \u201Cr<span class="hl">ei</span>gn\u201D or <span class="hl">ay</span> in \u201Cd<span class="hl">ay</span>\u201D<br><span class="note">Was merging toward a pure long \u201Cay\u201D in classical times</span>',
+   k:'Like the <span class="hl">ee</span> in \u201Cm<span class="hl">ee</span>t\u201D<br><span class="note">Merged with iota</span>'},
+  {g:'\u03BF\u03B9',n:'omicron + iota',
+   a:'Like the <span class="hl">oi</span> in \u201C<span class="hl">oi</span>l\u201D or \u201Cb<span class="hl">oy</span>\u201D',
+   k:'Like the <span class="hl">ee</span> in \u201Cm<span class="hl">ee</span>t\u201D<br><span class="note">Merged toward iota</span>'},
+  {g:'\u03B1\u03C5',n:'alpha + upsilon',
+   a:'Like the <span class="hl">ow</span> in \u201Cc<span class="hl">ow</span>\u201D or <span class="hl">ou</span> in \u201Cl<span class="hl">ou</span>d\u201D<br><span class="note">Technically \u03B1 + French \u201Cu\u201D, but \u201Cow\u201D is the common approximation</span>',
+   k:'\u201C<span class="hl">av</span>\u201D before voiced sounds, \u201C<span class="hl">af</span>\u201D before voiceless<br><span class="note">The upsilon became a fricative v/f</span>'},
+  {g:'\u03B5\u03C5',n:'epsilon + upsilon',
+   a:'Like \u201Ceh\u201D gliding into an \u201Coo\u201D<br><span class="note">No clean English equivalent. Closest: the \u201Ceu\u201D in \u201Cfeud\u201D without the initial Y</span>',
+   k:'\u201C<span class="hl">ev</span>\u201D before voiced sounds, \u201C<span class="hl">ef</span>\u201D before voiceless<br><span class="note">The upsilon became a fricative v/f</span>'},
+  {g:'\u03BF\u03C5',n:'omicron + upsilon',
+   a:'Like the <span class="hl">oo</span> in \u201Cm<span class="hl">oo</span>n\u201D or \u201Cb<span class="hl">oo</span>t\u201D<br><span class="note">By classical times had merged into a single long \u201Coo\u201D sound</span>',
+   k:'Like the <span class="hl">oo</span> in \u201Cm<span class="hl">oo</span>n\u201D'},
+  {g:'\u03C5\u03B9',n:'upsilon + iota',
+   a:'French \u201Cu\u201D gliding into \u201Cee\u201D<br><span class="note">Rare. No English equivalent</span>',
+   k:'Like the <span class="hl">ee</span> in \u201Cm<span class="hl">ee</span>t\u201D<br><span class="note">Rare</span>'}
+];
+
+function renderRef(){
+  var d=refDialect;
+  // Intro box
+  document.getElementById('introBox').innerHTML=d==='attic'?
+    '<p><strong>Vowels</strong> are marked with a <span style="color:var(--vowel);font-weight:600">blue</span> left border. <strong>Consonants</strong> are marked <span style="color:var(--consonant);font-weight:600">gold</span>. The <span style="color:var(--highlight);font-weight:700">highlighted</span> letters in each English word show the target sound.</p><p>All sounds are <strong>restored classical Attic</strong> pronunciation (5th\u20134th century BC).</p>':
+    '<p><strong>Vowels</strong> are marked with a <span style="color:var(--vowel);font-weight:600">blue</span> left border. <strong>Consonants</strong> are marked <span style="color:var(--consonant);font-weight:600">gold</span>. The <span style="color:var(--highlight);font-weight:700">highlighted</span> letters in each English word show the target sound.</p><p>All sounds are <strong>historical Koine</strong> pronunciation (1st\u20132nd century AD). Key differences from classical are noted.</p>';
+  // Letters
+  var lg=document.getElementById('letterGrid');
+  lg.innerHTML='';
+  letterInfo.forEach(function(lt){
+    var pr=d==='koine'?lt.k:lt.a;
+    var isV=lt.t==='v';
+    var h='<div class="letter-card '+(isV?'vowel':'consonant')+'">';
+    h+='<span class="card-type '+(isV?'v-tag':'c-tag')+'">'+(isV?'vowel':'consonant')+'</span>';
+    h+='<div class="card-letters"><span class="card-upper">'+lt.u+'</span><span class="card-lower">'+lt.l+'</span>';
+    if(lt.alt) h+='<span class="card-lower-alt">'+lt.alt+'</span>';
+    h+='</div>';
+    h+='<div class="card-names"><div class="card-name-row"><span class="card-name-label">lc</span><span class="card-name-greek">'+lt.nL+'</span></div>';
+    h+='<div class="card-name-row"><span class="card-name-label">uc</span><span class="card-name-greek">'+lt.nU+'</span></div></div>';
+    h+='<div class="card-sound">'+pr.s;
+    if(pr.n) h+='<br><span class="note">'+pr.n+'</span>';
+    h+='</div></div>';
+    lg.innerHTML+=h;
+  });
+  // Diphthongs
+  var dg=document.getElementById('diphGrid');
+  dg.innerHTML='';
+  diphInfo.forEach(function(di){
+    var sound=d==='koine'?di.k:di.a;
+    dg.innerHTML+='<div class="diph-card"><div class="diph-letters">'+di.g+'</div><div class="diph-name">'+di.n+'</div><div class="diph-sound">'+sound+'</div></div>';
+  });
+  // Aspiration box
+  var ab=document.getElementById('aspirBox');
+  if(d==='attic'){
+    ab.innerHTML='<p><strong>About aspiration:</strong> The three \u201Caspirated\u201D consonants (\u03B8, \u03C6, \u03C7) were plain stops (t, p, k) followed by a puff of breath. Say \u201C<strong>t</strong>op\u201D vs \u201Cs<strong>t</strong>op\u201D with your hand out \u2014 feel the puff on \u201Ctop\u201D? That\u2019s aspiration.</p><p><strong>The pairs:</strong> \u03C4 (stop) vs \u03B8 (top) \u00B7 \u03C0 (spin) vs \u03C6 (pin) \u00B7 \u03BA (skip) vs \u03C7 (kid)</p>';
+  } else {
+    ab.innerHTML='<p><strong>About the fricative shift:</strong> In classical Greek, \u03B8, \u03C6, and \u03C7 were aspirated stops (t\u02B0, p\u02B0, k\u02B0). By the Koine period, they had shifted to <strong>fricatives</strong>: \u03B8 became \u201Cth\u201D (as in \u201Cthink\u201D), \u03C6 became \u201Cf\u201D (as in \u201Cfun\u201D), and \u03C7 became \u201Cch\u201D (as in Scottish \u201Cloch\u201D). Similarly, \u03B2 shifted from \u201Cb\u201D to \u201Cv\u201D, \u03B4 from \u201Cd\u201D to soft \u201Cth\u201D (as in \u201Cthe\u201D), and \u03B3 became a soft fricative.</p>';
+  }
+}
+
+function setRefDialect(d){
+  refDialect=d;
+  document.getElementById('rBtnA').classList.toggle('active',d==='attic');
+  document.getElementById('rBtnK').classList.toggle('active',d==='koine');
+  renderRef();
+}
+
+function toggleTheme(){
+  var h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);
+  try{localStorage.setItem('greek-plan-theme',n)}catch(e){}
+}
+try{var s=localStorage.getItem('greek-plan-theme');if(s==='dark')document.documentElement.setAttribute('data-theme','dark');else if(!s&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark')}catch(e){}
+renderRef();
+</script>
+</body>
+</html>

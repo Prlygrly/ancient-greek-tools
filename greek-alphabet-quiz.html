@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greek Alphabet Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#2a2118;--ink-light:#5c4d3c;--ink-faint:#8a7a68;
+  --bg:#f5f0e8;--bg-mid:#e8dfd2;--bg-deep:#d9cdb9;
+  --card-bg:#fff;--card-border:#e8dfd2;
+  --accent:#8b3a3a;--accent-soft:#c4787830;--accent-glow:#c4787815;
+  --link:#6b4c8a;
+  --correct:#4a7a4e;--correct-bg:#4a7a4e18;--correct-border:#4a7a4e40;
+  --wrong:#9b4444;--wrong-bg:#9b444418;--wrong-border:#9b444440;
+  --opt-hover:#f0ebe3;
+  --toggle-bg:#d9cdb9;--toggle-knob:#fff;
+  --btn-bg:#8b3a3a;--btn-text:#fff;--btn-hover:#a84e4e;
+}
+[data-theme="dark"]{
+  --ink:#e0d8cc;--ink-light:#b8ac9a;--ink-faint:#887c6c;
+  --bg:#1a1614;--bg-mid:#252018;--bg-deep:#302920;
+  --card-bg:#221e1a;--card-border:#3a332a;
+  --accent:#c47878;--accent-soft:#c4787830;--accent-glow:#c4787820;
+  --link:#a88cc4;
+  --correct:#7daa82;--correct-bg:#4a7a4e20;--correct-border:#4a7a4e45;
+  --wrong:#d49090;--wrong-bg:#9b444420;--wrong-border:#9b444445;
+  --opt-hover:#2a2520;
+  --toggle-bg:#3a332a;--toggle-knob:#e0d8cc;
+  --btn-bg:#c47878;--btn-text:#1a1614;--btn-hover:#d49090;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans Pro',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased;transition:background .35s,color .35s;min-height:100vh}
+.container{max-width:640px;margin:0 auto;padding:40px 20px 80px}
+
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.theme-toggle-label{font-size:12px;font-weight:600;color:var(--ink-faint);letter-spacing:.04em}
+.toggle-track{width:44px;height:24px;background:var(--toggle-bg);border-radius:12px;position:relative;transition:background .35s}
+.toggle-knob{width:18px;height:18px;background:var(--toggle-knob);border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .35s,background .35s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-icon{position:absolute;font-size:12px;top:4px;transition:opacity .25s}
+.toggle-icon.sun{right:5px;opacity:1}.toggle-icon.moon{left:5px;opacity:0}
+[data-theme="dark"] .toggle-knob{transform:translateX(20px)}
+[data-theme="dark"] .toggle-icon.sun{opacity:0}
+[data-theme="dark"] .toggle-icon.moon{opacity:1}
+
+header{text-align:center;margin-bottom:32px}
+header h1{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;line-height:1.15;margin-bottom:8px}
+header p{font-size:14px;color:var(--ink-faint)}
+
+/* Mode selector */
+.mode-screen{text-align:center}
+.mode-screen h2{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;margin-bottom:20px}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.mode-btn{background:var(--card-bg);border:1px solid var(--card-border);border-radius:10px;padding:18px 14px;cursor:pointer;transition:all .2s;text-align:center}
+.mode-btn:hover{border-color:var(--accent);box-shadow:0 2px 12px var(--accent-glow)}
+.mode-btn:active{transform:scale(.97)}
+.mode-icon{font-size:28px;margin-bottom:6px;display:block}
+.mode-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--ink);display:block;margin-bottom:3px}
+.mode-desc{font-size:12px;color:var(--ink-faint);line-height:1.4}
+
+.round-select{margin-top:8px;margin-bottom:20px}
+.round-select label{font-size:14px;color:var(--ink-light);margin-right:8px}
+.round-select select{font-family:'Source Sans Pro',sans-serif;font-size:14px;padding:6px 10px;border-radius:6px;border:1px solid var(--card-border);background:var(--card-bg);color:var(--ink);cursor:pointer}
+
+.dialect-toggle{display:flex;justify-content:center;gap:0;margin-bottom:20px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;overflow:hidden;max-width:300px;margin-left:auto;margin-right:auto;transition:background .35s,border-color .35s}
+.dialect-btn{flex:1;padding:10px 16px;font-family:'Source Sans Pro',sans-serif;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--ink-faint)}
+.dialect-btn:hover{color:var(--ink)}
+.dialect-btn.active{background:var(--accent);color:#fff}
+[data-theme="dark"] .dialect-btn.active{color:#1a1614}
+
+/* Quiz screen */
+.quiz-screen{display:none}
+.quiz-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--bg-deep)}
+.quiz-mode-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+.quiz-progress{font-size:13px;color:var(--ink-faint)}
+.quiz-score{font-size:13px;color:var(--correct);font-weight:600}
+
+.question-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:28px 24px;margin-bottom:20px;text-align:center;transition:background .35s,border-color .35s}
+.question-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:10px}
+.question-prompt{font-size:18px;color:var(--ink);line-height:1.5}
+.question-prompt .big-greek{font-family:'Noto Serif',serif;font-size:72px;font-weight:400;color:var(--accent);display:block;margin:12px 0 8px;line-height:1.1}
+.question-prompt .big-greek-pair{font-family:'Noto Serif',serif;font-size:56px;font-weight:400;color:var(--accent);display:block;margin:12px 0 8px;line-height:1.1;letter-spacing:.08em}
+.question-prompt .big-sound{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--ink);display:block;margin:8px 0;line-height:1.4}
+.question-prompt .big-name{font-family:'Noto Serif',serif;font-size:36px;font-weight:400;color:var(--accent);display:block;margin:10px 0 6px;line-height:1.2}
+.question-prompt .example-word{font-size:14px;color:var(--ink-faint);font-style:italic;margin-top:4px}
+
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.option-btn{background:var(--card-bg);border:2px solid var(--card-border);border-radius:10px;padding:16px 12px;cursor:pointer;transition:all .15s;text-align:center;font-family:'Source Sans Pro',sans-serif;font-size:15px;color:var(--ink);position:relative}
+.option-btn:hover:not(.locked){border-color:var(--accent);background:var(--opt-hover)}
+.option-btn:active:not(.locked){transform:scale(.97)}
+.option-btn .opt-greek{font-family:'Noto Serif',serif;font-size:36px;color:var(--accent);display:block;margin-bottom:4px;line-height:1.1}
+.option-btn .opt-greek-sm{font-family:'Noto Serif',serif;font-size:24px;color:var(--accent);display:block;margin-bottom:4px;line-height:1.1}
+.option-btn .opt-text{font-size:14px;color:var(--ink-light)}
+.option-btn .opt-sound{font-size:14px;color:var(--ink-light);line-height:1.4}
+.option-btn.correct{border-color:var(--correct-border);background:var(--correct-bg)}
+.option-btn.correct .opt-greek,.option-btn.correct .opt-greek-sm,.option-btn.correct .opt-text,.option-btn.correct .opt-sound{color:var(--correct)}
+.option-btn.wrong{border-color:var(--wrong-border);background:var(--wrong-bg);opacity:.7}
+.option-btn.wrong .opt-greek,.option-btn.wrong .opt-greek-sm,.option-btn.wrong .opt-text,.option-btn.wrong .opt-sound{color:var(--wrong)}
+.option-btn.locked{cursor:default}
+.option-btn.dimmed{opacity:.45;cursor:default}
+
+.feedback{text-align:center;min-height:28px;margin-bottom:16px;font-size:15px;font-weight:600;transition:opacity .2s}
+.feedback.correct-fb{color:var(--correct)}
+.feedback.wrong-fb{color:var(--wrong)}
+
+.next-btn{display:none;margin:0 auto;padding:12px 36px;font-family:'Source Sans Pro',sans-serif;font-size:15px;font-weight:600;background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:8px;cursor:pointer;transition:background .2s,transform .1s}
+.next-btn:hover{background:var(--btn-hover)}
+.next-btn:active{transform:scale(.96)}
+
+/* Results */
+.results-screen{display:none;text-align:center}
+.results-screen h2{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;margin-bottom:8px}
+.results-score{font-size:64px;font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--accent);margin:16px 0}
+.results-sub{font-size:16px;color:var(--ink-light);margin-bottom:8px}
+.results-msg{font-size:15px;color:var(--ink-faint);margin-bottom:28px;font-style:italic}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.results-btns button{padding:12px 28px;font-family:'Source Sans Pro',sans-serif;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;transition:all .2s}
+.retry-btn{background:var(--btn-bg);color:var(--btn-text);border:none}
+.retry-btn:hover{background:var(--btn-hover)}
+.back-btn{background:transparent;color:var(--ink-light);border:1px solid var(--card-border)}
+.back-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Missed review */
+.missed-section{margin-top:32px;text-align:left}
+.missed-section h3{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;margin-bottom:12px;text-align:center;color:var(--wrong)}
+.missed-item{display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--wrong-bg);border-radius:8px;margin-bottom:8px}
+.missed-letter{font-family:'Noto Serif',serif;font-size:32px;color:var(--accent);min-width:50px;text-align:center}
+.missed-info{font-size:14px;color:var(--ink-light);line-height:1.5}
+.missed-info strong{color:var(--ink)}
+
+@media(max-width:500px){
+  .container{padding:32px 14px 72px}
+  header h1{font-size:28px}
+  .mode-grid{grid-template-columns:1fr}
+  .options{grid-template-columns:1fr}
+  .question-prompt .big-greek{font-size:56px}
+  .question-prompt .big-greek-pair{font-size:42px}
+  .question-prompt .big-name{font-size:28px}
+  .theme-toggle{top:10px;right:10px}
+  .theme-toggle-label{display:none}
+  .home-link{top:10px;left:10px}
+}
+.home-link{position:fixed;top:16px;left:16px;z-index:100;font-size:12px;font-weight:600;color:var(--ink-faint);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.home-link:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<a class="home-link" href="index.html">&#8592; Home</a>
+
+<div class="theme-toggle" onclick="toggleTheme()" role="button" tabindex="0" aria-label="Toggle dark mode">
+  <span class="theme-toggle-label">Dark mode</span>
+  <div class="toggle-track">
+    <span class="toggle-icon sun">&#9788;</span>
+    <span class="toggle-icon moon">&#9790;</span>
+    <div class="toggle-knob"></div>
+  </div>
+</div>
+
+<div class="container">
+<header>
+  <h1>&#932;&#8056; &#7944;&#955;&#966;&#945;&#946;&#951;&#964;&#953;&#954;&#8056;&#957; &#928;&#945;&#943;&#947;&#957;&#953;&#959;&#957;</h1>
+  <p>The Alphabet Game &mdash; test your knowledge of Greek letters, names, and sounds</p>
+</header>
+
+<!-- MODE SELECT -->
+<div class="mode-screen" id="modeScreen">
+  <h2>Choose a Quiz Mode</h2>
+  <div class="dialect-toggle">
+    <button class="dialect-btn active" id="qBtnAttic" onclick="setQuizDialect('attic')">Classical Attic</button>
+    <button class="dialect-btn" id="qBtnKoine" onclick="setQuizDialect('koine')">Koine</button>
+  </div>
+  <div class="mode-grid">
+    <div class="mode-btn" onclick="startQuiz('sound2sym')">
+      <span class="mode-icon">&#127925;</span>
+      <span class="mode-title">Sound &rarr; Symbol</span>
+      <span class="mode-desc">Hear the sound description, pick the Greek letter</span>
+    </div>
+    <div class="mode-btn" onclick="startQuiz('sym2sound')">
+      <span class="mode-icon">&#9001;&#945;&#9002;</span>
+      <span class="mode-title">Symbol &rarr; Sound</span>
+      <span class="mode-desc">See a Greek letter, pick its sound</span>
+    </div>
+    <div class="mode-btn" onclick="startQuiz('name2sym')">
+      <span class="mode-icon">&#128220;</span>
+      <span class="mode-title">Name &rarr; Symbol</span>
+      <span class="mode-desc">See the Greek name, pick the letter</span>
+    </div>
+    <div class="mode-btn" onclick="startQuiz('sym2name')">
+      <span class="mode-icon">&#128300;</span>
+      <span class="mode-title">Symbol &rarr; Name</span>
+      <span class="mode-desc">See a Greek letter, pick its name</span>
+    </div>
+    <div class="mode-btn" onclick="startQuiz('upper2lower')">
+      <span class="mode-icon">&#913;&#8596;&#945;</span>
+      <span class="mode-title">Upper &harr; Lower</span>
+      <span class="mode-desc">Match uppercase to lowercase and vice versa</span>
+    </div>
+    <div class="mode-btn" onclick="startQuiz('mixed')">
+      <span class="mode-icon">&#127922;</span>
+      <span class="mode-title">Mixed Challenge</span>
+      <span class="mode-desc">Random mix of all modes &mdash; the real test</span>
+    </div>
+  </div>
+  <div class="round-select">
+    <label for="numQ">Questions per round:</label>
+    <select id="numQ">
+      <option value="10">10</option>
+      <option value="15">15</option>
+      <option value="24" selected>24 (full alphabet)</option>
+      <option value="48">48 (two passes)</option>
+    </select>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="quiz-screen" id="quizScreen">
+  <div class="quiz-top">
+    <span class="quiz-mode-label" id="quizModeLabel"></span>
+    <span class="quiz-progress" id="quizProgress"></span>
+    <span class="quiz-score" id="quizScore"></span>
+  </div>
+  <div class="question-card" id="questionCard"></div>
+  <div class="options" id="optionsArea"></div>
+  <div class="feedback" id="feedback">&nbsp;</div>
+  <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next &rarr;</button>
+</div>
+
+<!-- RESULTS -->
+<div class="results-screen" id="resultsScreen">
+  <h2>Round Complete!</h2>
+  <div class="results-score" id="finalScore"></div>
+  <div class="results-sub" id="finalSub"></div>
+  <div class="results-msg" id="finalMsg"></div>
+  <div class="results-btns">
+    <button class="retry-btn" id="retryBtn">Play Again</button>
+    <button class="back-btn" onclick="showScreen('mode')">Change Mode</button>
+  </div>
+  <div class="missed-section" id="missedSection" style="display:none">
+    <h3>Review These</h3>
+    <div id="missedList"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════ DATA ═══════
+var base = [
+  {u:"\u0391",l:"\u03B1",nameL:"\u1F04\u03BB\u03C6\u03B1",nameU:"\u0391\u039B\u03A6\u0391",type:"vowel"},
+  {u:"\u0392",l:"\u03B2",nameL:"\u03B2\u1FC6\u03C4\u03B1",nameU:"\u0392\u0397\u03A4\u0391",type:"consonant"},
+  {u:"\u0393",l:"\u03B3",nameL:"\u03B3\u03AC\u03BC\u03BC\u03B1",nameU:"\u0393\u0391\u039C\u039C\u0391",type:"consonant"},
+  {u:"\u0394",l:"\u03B4",nameL:"\u03B4\u03AD\u03BB\u03C4\u03B1",nameU:"\u0394\u0395\u039B\u03A4\u0391",type:"consonant"},
+  {u:"\u0395",l:"\u03B5",nameL:"\u1F14\u03C8\u03B9\u03BB\u03CC\u03BD",nameU:"\u0395\u03A8\u0399\u039B\u039F\u039D",type:"vowel"},
+  {u:"\u0396",l:"\u03B6",nameL:"\u03B6\u1FC6\u03C4\u03B1",nameU:"\u0396\u0397\u03A4\u0391",type:"consonant"},
+  {u:"\u0397",l:"\u03B7",nameL:"\u1F26\u03C4\u03B1",nameU:"\u0397\u03A4\u0391",type:"vowel"},
+  {u:"\u0398",l:"\u03B8",nameL:"\u03B8\u1FC6\u03C4\u03B1",nameU:"\u0398\u0397\u03A4\u0391",type:"consonant"},
+  {u:"\u0399",l:"\u03B9",nameL:"\u1F30\u1FF6\u03C4\u03B1",nameU:"\u0399\u03A9\u03A4\u0391",type:"vowel"},
+  {u:"\u039A",l:"\u03BA",nameL:"\u03BA\u03AC\u03C0\u03C0\u03B1",nameU:"\u039A\u0391\u03A0\u03A0\u0391",type:"consonant"},
+  {u:"\u039B",l:"\u03BB",nameL:"\u03BB\u03AC\u03BC\u03B2\u03B4\u03B1",nameU:"\u039B\u0391\u039C\u0392\u0394\u0391",type:"consonant"},
+  {u:"\u039C",l:"\u03BC",nameL:"\u03BC\u1FE6",nameU:"\u039C\u03A5",type:"consonant"},
+  {u:"\u039D",l:"\u03BD",nameL:"\u03BD\u1FE6",nameU:"\u039D\u03A5",type:"consonant"},
+  {u:"\u039E",l:"\u03BE",nameL:"\u03BE\u1FD6",nameU:"\u039E\u0399",type:"consonant"},
+  {u:"\u039F",l:"\u03BF",nameL:"\u1F44\u03BC\u03B9\u03BA\u03C1\u03CC\u03BD",nameU:"\u039F\u039C\u0399\u039A\u03A1\u039F\u039D",type:"vowel"},
+  {u:"\u03A0",l:"\u03C0",nameL:"\u03C0\u1FD6",nameU:"\u03A0\u0399",type:"consonant"},
+  {u:"\u03A1",l:"\u03C1",nameL:"\u1FE5\u1FF6",nameU:"\u03A1\u03A9",type:"consonant"},
+  {u:"\u03A3",l:"\u03C3",nameL:"\u03C3\u03AF\u03B3\u03BC\u03B1",nameU:"\u03A3\u0399\u0393\u039C\u0391",type:"consonant"},
+  {u:"\u03A4",l:"\u03C4",nameL:"\u03C4\u03B1\u1FE6",nameU:"\u03A4\u0391\u03A5",type:"consonant"},
+  {u:"\u03A5",l:"\u03C5",nameL:"\u1F54\u03C8\u03B9\u03BB\u03CC\u03BD",nameU:"\u03A5\u03A8\u0399\u039B\u039F\u039D",type:"vowel"},
+  {u:"\u03A6",l:"\u03C6",nameL:"\u03C6\u1FD6",nameU:"\u03A6\u0399",type:"consonant"},
+  {u:"\u03A7",l:"\u03C7",nameL:"\u03C7\u1FD6",nameU:"\u03A7\u0399",type:"consonant"},
+  {u:"\u03A8",l:"\u03C8",nameL:"\u03C8\u1FD6",nameU:"\u03A8\u0399",type:"consonant"},
+  {u:"\u03A9",l:"\u03C9",nameL:"\u1F60\u03BC\u03AD\u03B3\u03B1",nameU:"\u03A9\u039C\u0395\u0393\u0391",type:"vowel"}
+];
+
+var atticSounds = [
+  {sound:"\"a\" as in father",soundShort:"ah (father)",ex:"father"},
+  {sound:"\"b\" as in bed",soundShort:"b (bed)",ex:"bed"},
+  {sound:"hard \"g\" as in get",soundShort:"g (get)",ex:"get"},
+  {sound:"\"d\" as in dog",soundShort:"d (dog)",ex:"dog"},
+  {sound:"short \"e\" as in bed",soundShort:"eh (bed)",ex:"bed"},
+  {sound:"\"dz\" as in adze",soundShort:"dz (adze)",ex:"adze"},
+  {sound:"long open \"e\" as in hair",soundShort:"ay (hair)",ex:"hair"},
+  {sound:"aspirated T \u2014 \"t\" in top (puff of air)",soundShort:"t\u02B0 (top, with puff)",ex:"top"},
+  {sound:"short \"i\" as in bit, or long \"ee\" as in meet",soundShort:"i (bit) / ee (meet)",ex:"bit / meet"},
+  {sound:"unaspirated \"k\" as in skip",soundShort:"k (skip, no puff)",ex:"skip"},
+  {sound:"\"l\" as in lamp",soundShort:"l (lamp)",ex:"lamp"},
+  {sound:"\"m\" as in map",soundShort:"m (map)",ex:"map"},
+  {sound:"\"n\" as in net",soundShort:"n (net)",ex:"net"},
+  {sound:"\"ks\" as in box",soundShort:"ks (box)",ex:"box"},
+  {sound:"short \"o\" as in pot",soundShort:"o (pot)",ex:"pot"},
+  {sound:"unaspirated \"p\" as in spin",soundShort:"p (spin, no puff)",ex:"spin"},
+  {sound:"trilled \"r\" (Spanish-style)",soundShort:"r (trilled)",ex:"red (trilled)"},
+  {sound:"\"s\" as in sun",soundShort:"s (sun)",ex:"sun"},
+  {sound:"unaspirated \"t\" as in stop",soundShort:"t (stop, no puff)",ex:"stop"},
+  {sound:"French \"u\" in tu (no English equivalent)",soundShort:"\u00FC (French tu)",ex:"French tu"},
+  {sound:"aspirated P \u2014 \"p\" in pin (puff of air)",soundShort:"p\u02B0 (pin, with puff)",ex:"pin"},
+  {sound:"aspirated K \u2014 \"k\" in kid (puff of air)",soundShort:"k\u02B0 (kid, with puff)",ex:"kid"},
+  {sound:"\"ps\" as in tips or lapse",soundShort:"ps (tips)",ex:"tips"},
+  {sound:"long \"o\" as in bone",soundShort:"oh (bone)",ex:"bone"}
+];
+
+var koineSounds = [
+  {sound:"\"a\" as in father",soundShort:"ah (father)",ex:"father"},
+  {sound:"\"v\" as in vine",soundShort:"v (vine)",ex:"vine"},
+  {sound:"soft fricative g (gargle-like)",soundShort:"\u0263 (soft g)",ex:"soft gargle"},
+  {sound:"\"th\" as in the",soundShort:"\u00F0 (the)",ex:"the"},
+  {sound:"short \"e\" as in bed",soundShort:"eh (bed)",ex:"bed"},
+  {sound:"\"z\" as in zone",soundShort:"z (zone)",ex:"zone"},
+  {sound:"\"ee\" as in meet (merged toward iota)",soundShort:"ee (meet)",ex:"meet"},
+  {sound:"\"th\" as in think",soundShort:"th (think)",ex:"think"},
+  {sound:"\"ee\" as in meet",soundShort:"ee (meet)",ex:"meet"},
+  {sound:"\"k\" as in skip",soundShort:"k (skip)",ex:"skip"},
+  {sound:"\"l\" as in lamp",soundShort:"l (lamp)",ex:"lamp"},
+  {sound:"\"m\" as in map",soundShort:"m (map)",ex:"map"},
+  {sound:"\"n\" as in net",soundShort:"n (net)",ex:"net"},
+  {sound:"\"ks\" as in box",soundShort:"ks (box)",ex:"box"},
+  {sound:"short \"o\" as in pot",soundShort:"o (pot)",ex:"pot"},
+  {sound:"\"p\" as in spin",soundShort:"p (spin)",ex:"spin"},
+  {sound:"trilled or tapped \"r\"",soundShort:"r (tapped)",ex:"red (tapped)"},
+  {sound:"\"s\" as in sun",soundShort:"s (sun)",ex:"sun"},
+  {sound:"\"t\" as in stop",soundShort:"t (stop)",ex:"stop"},
+  {sound:"\"ee\" as in meet (merged toward iota)",soundShort:"ee (meet)",ex:"meet"},
+  {sound:"\"f\" as in fun",soundShort:"f (fun)",ex:"fun"},
+  {sound:"\"ch\" as in Scottish loch",soundShort:"ch (loch)",ex:"loch"},
+  {sound:"\"ps\" as in tips or lapse",soundShort:"ps (tips)",ex:"tips"},
+  {sound:"long \"o\" as in bone",soundShort:"oh (bone)",ex:"bone"}
+];
+
+var currentQuizDialect = 'attic';
+
+function buildLetters(dialect){
+  var sounds = dialect === 'koine' ? koineSounds : atticSounds;
+  return base.map(function(b,i){
+    return {u:b.u,l:b.l,nameL:b.nameL,nameU:b.nameU,type:b.type,
+            sound:sounds[i].sound,soundShort:sounds[i].soundShort,ex:sounds[i].ex};
+  });
+}
+
+var letters = buildLetters('attic');
+
+function setQuizDialect(d){
+  currentQuizDialect = d;
+  letters = buildLetters(d);
+  document.getElementById('qBtnAttic').classList.toggle('active', d === 'attic');
+  document.getElementById('qBtnKoine').classList.toggle('active', d === 'koine');
+}
+
+var modeNames = {
+  sound2sym:"Sound \u2192 Symbol",
+  sym2sound:"Symbol \u2192 Sound",
+  name2sym:"Name \u2192 Symbol",
+  sym2name:"Symbol \u2192 Name",
+  upper2lower:"Upper \u2194 Lower",
+  mixed:"Mixed Challenge"
+};
+
+var allModes = ['sound2sym','sym2sound','name2sym','sym2name','upper2lower'];
+var state = {};
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+function pick(arr,n,exclude){
+  var pool=arr.filter(function(x){return x!==exclude});
+  shuffle(pool);
+  return pool.slice(0,n);
+}
+
+function showScreen(s){
+  document.getElementById('modeScreen').style.display=s==='mode'?'block':'none';
+  document.getElementById('quizScreen').style.display=s==='quiz'?'block':'none';
+  document.getElementById('resultsScreen').style.display=s==='results'?'block':'none';
+}
+
+function startQuiz(mode){
+  var numQ=parseInt(document.getElementById('numQ').value);
+  var questions=[];
+  var pool=shuffle(letters.slice());
+
+  // Build question pool
+  while(questions.length<numQ){
+    for(var i=0;i<pool.length&&questions.length<numQ;i++){
+      var m=mode==='mixed'?allModes[Math.floor(Math.random()*allModes.length)]:mode;
+      questions.push({letter:pool[i],mode:m});
+    }
+    pool=shuffle(letters.slice());
+  }
+
+  if(mode!=='mixed') shuffle(questions);
+
+  state={mode:mode,questions:questions,current:0,score:0,missed:[]};
+  document.getElementById('quizModeLabel').textContent=modeNames[mode];
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var q=state.questions[state.current];
+  var lt=q.letter;
+  var m=q.mode;
+  var qc=document.getElementById('questionCard');
+  var oa=document.getElementById('optionsArea');
+  var fb=document.getElementById('feedback');
+  var nb=document.getElementById('nextBtn');
+
+  fb.innerHTML='&nbsp;';fb.className='feedback';
+  nb.style.display='none';
+
+  document.getElementById('quizProgress').textContent=(state.current+1)+' / '+state.questions.length;
+  document.getElementById('quizScore').textContent='\u2713 '+state.score;
+
+  // Build question prompt and options
+  var promptHTML='';
+  var opts=[];
+
+  if(m==='sound2sym'){
+    promptHTML='<div class="question-label">What letter makes this sound?</div>';
+    promptHTML+='<div class="big-sound">'+escH(lt.sound)+'</div>';
+    promptHTML+='<div class="example-word">as in \u201C'+escH(lt.ex)+'\u201D</div>';
+    var wrongs=pick(letters,3,lt);
+    opts=[lt].concat(wrongs);
+    shuffle(opts);
+    oa.innerHTML=opts.map(function(o,i){
+      return '<button class="option-btn" data-idx="'+i+'" onclick="answer('+i+','+opts.indexOf(lt)+')">'+
+        '<span class="opt-greek">'+o.u+' '+o.l+'</span></button>';
+    }).join('');
+  }
+  else if(m==='sym2sound'){
+    var useUpper=Math.random()>.5;
+    promptHTML='<div class="question-label">What sound does this letter make?</div>';
+    promptHTML+='<span class="big-greek">'+(useUpper?lt.u:lt.l)+'</span>';
+    var wrongs=pick(letters,3,lt);
+    opts=[lt].concat(wrongs);shuffle(opts);
+    oa.innerHTML=opts.map(function(o,i){
+      return '<button class="option-btn" data-idx="'+i+'" onclick="answer('+i+','+opts.indexOf(lt)+')">'+
+        '<span class="opt-sound">'+escH(o.soundShort)+'</span></button>';
+    }).join('');
+  }
+  else if(m==='name2sym'){
+    var useUpper=Math.random()>.5;
+    promptHTML='<div class="question-label">Which letter has this name?</div>';
+    promptHTML+='<span class="big-name">'+(useUpper?lt.nameU:lt.nameL)+'</span>';
+    var wrongs=pick(letters,3,lt);
+    opts=[lt].concat(wrongs);shuffle(opts);
+    oa.innerHTML=opts.map(function(o,i){
+      return '<button class="option-btn" data-idx="'+i+'" onclick="answer('+i+','+opts.indexOf(lt)+')">'+
+        '<span class="opt-greek">'+o.u+' '+o.l+'</span></button>';
+    }).join('');
+  }
+  else if(m==='sym2name'){
+    var useUpper=Math.random()>.5;
+    promptHTML='<div class="question-label">What is this letter\u2019s name?</div>';
+    promptHTML+='<span class="big-greek">'+(useUpper?lt.u:lt.l)+'</span>';
+    var wrongs=pick(letters,3,lt);
+    opts=[lt].concat(wrongs);shuffle(opts);
+    oa.innerHTML=opts.map(function(o,i){
+      var showUpper=Math.random()>.5;
+      return '<button class="option-btn" data-idx="'+i+'" onclick="answer('+i+','+opts.indexOf(lt)+')">'+
+        '<span class="opt-greek-sm">'+(showUpper?o.nameU:o.nameL)+'</span></button>';
+    }).join('');
+  }
+  else if(m==='upper2lower'){
+    var showUpper=Math.random()>.5;
+    if(showUpper){
+      promptHTML='<div class="question-label">Which is the lowercase form?</div>';
+      promptHTML+='<span class="big-greek">'+lt.u+'</span>';
+      var wrongs=pick(letters,3,lt);
+      opts=[lt].concat(wrongs);shuffle(opts);
+      oa.innerHTML=opts.map(function(o,i){
+        return '<button class="option-btn" data-idx="'+i+'" onclick="answer('+i+','+opts.indexOf(lt)+')">'+
+          '<span class="opt-greek">'+o.l+'</span></button>';
+      }).join('');
+    } else {
+      promptHTML='<div class="question-label">Which is the uppercase form?</div>';
+      promptHTML+='<span class="big-greek">'+lt.l+'</span>';
+      var wrongs=pick(letters,3,lt);
+      opts=[lt].concat(wrongs);shuffle(opts);
+      oa.innerHTML=opts.map(function(o,i){
+        return '<button class="option-btn" data-idx="'+i+'" onclick="answer('+i+','+opts.indexOf(lt)+')">'+
+          '<span class="opt-greek">'+o.u+'</span></button>';
+      }).join('');
+    }
+  }
+
+  qc.innerHTML=promptHTML;
+}
+
+function answer(chosen,correctIdx){
+  var btns=document.querySelectorAll('.option-btn');
+  if(btns[0].classList.contains('locked')) return;
+
+  var fb=document.getElementById('feedback');
+  var nb=document.getElementById('nextBtn');
+  var q=state.questions[state.current];
+  var lt=q.letter;
+
+  btns.forEach(function(b){b.classList.add('locked')});
+
+  if(chosen===correctIdx){
+    state.score++;
+    btns[chosen].classList.add('correct');
+    fb.textContent='\u2713 Correct!';
+    fb.className='feedback correct-fb';
+    btns.forEach(function(b,i){if(i!==chosen)b.classList.add('dimmed')});
+  } else {
+    btns[chosen].classList.add('wrong');
+    btns[correctIdx].classList.add('correct');
+    fb.textContent='\u2717 That was '+lt.nameL+' ('+lt.u+' '+lt.l+')';
+    fb.className='feedback wrong-fb';
+    btns.forEach(function(b,i){if(i!==chosen&&i!==correctIdx)b.classList.add('dimmed')});
+    state.missed.push(lt);
+  }
+
+  document.getElementById('quizScore').textContent='\u2713 '+state.score;
+
+  if(state.current<state.questions.length-1){
+    nb.textContent='Next \u2192';
+  } else {
+    nb.textContent='See Results';
+  }
+  nb.style.display='inline-block';
+}
+
+function nextQuestion(){
+  state.current++;
+  if(state.current>=state.questions.length){
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults(){
+  var total=state.questions.length;
+  var pct=Math.round((state.score/total)*100);
+  document.getElementById('finalScore').textContent=state.score+' / '+total;
+  document.getElementById('finalSub').textContent=pct+'% correct';
+
+  var msg='';
+  if(pct===100) msg='\u03C4\u03AD\u03BB\u03B5\u03B9\u03BF\u03BD! \u2014 Perfect! You know your alphabet.';
+  else if(pct>=85) msg='\u03BA\u03B1\u03BB\u1FF6\u03C2! \u2014 Excellent work. Almost there.';
+  else if(pct>=70) msg='\u03B5\u1F56 \u03B3\u03B5! \u2014 Good effort. Keep practicing the ones you missed.';
+  else if(pct>=50) msg='Getting there. Review the missed letters below and try again.';
+  else msg='Keep at it! Rome wasn\u2019t built in a day \u2014 neither was Athens.';
+  document.getElementById('finalMsg').textContent=msg;
+
+  var ms=document.getElementById('missedSection');
+  var ml=document.getElementById('missedList');
+  // Deduplicate missed
+  var seen={};
+  var unique=[];
+  state.missed.forEach(function(m){
+    var k=m.u;
+    if(!seen[k]){seen[k]=true;unique.push(m)}
+  });
+
+  if(unique.length>0){
+    ms.style.display='block';
+    ml.innerHTML=unique.map(function(m){
+      return '<div class="missed-item">'+
+        '<span class="missed-letter">'+m.u+' '+m.l+'</span>'+
+        '<div class="missed-info"><strong>'+m.nameL+'</strong><br>'+escH(m.sound)+'</div>'+
+      '</div>';
+    }).join('');
+  } else {
+    ms.style.display='none';
+  }
+
+  document.getElementById('retryBtn').onclick=function(){startQuiz(state.mode)};
+  showScreen('results');
+}
+
+function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function toggleTheme(){
+  var h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);
+  try{localStorage.setItem('greek-plan-theme',n)}catch(e){}
+}
+try{
+  var s=localStorage.getItem('greek-plan-theme');
+  if(s==='dark')document.documentElement.setAttribute('data-theme','dark');
+  else if(!s&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');
+}catch(e){}
+</script>
+</body>
+</html>

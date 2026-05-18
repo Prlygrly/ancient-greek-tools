@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greek Word Pronunciation Breakdown</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#2a2118;--ink-light:#5c4d3c;--ink-faint:#8a7a68;
+  --bg:#f5f0e8;--bg-mid:#e8dfd2;--bg-deep:#d9cdb9;
+  --card-bg:#fff;--card-border:#e8dfd2;
+  --accent:#8b3a3a;--accent-soft:#c4787825;--accent-glow:#c4787815;
+  --link:#6b4c8a;
+  --vowel:#5b6e8a;--vowel-bg:#5b6e8a15;
+  --cons:#7a6b3e;--cons-bg:#7a6b3e12;
+  --diph:#6b4c8a;--diph-bg:#6b4c8a12;
+  --long-v:#3e6b7a;--short-v:#7a6b3e;
+  --toggle-bg:#d9cdb9;--toggle-knob:#fff;
+  --key-bg:#fff;--key-border:#d9cdb9;--key-hover:#e8dfd2;--key-active:#d9cdb9;
+  --mod-bg:#f0ebe3;--mod-border:#c4b8a4;
+}
+[data-theme="dark"]{
+  --ink:#e0d8cc;--ink-light:#b8ac9a;--ink-faint:#887c6c;
+  --bg:#1a1614;--bg-mid:#252018;--bg-deep:#302920;
+  --card-bg:#221e1a;--card-border:#3a332a;
+  --accent:#c47878;--accent-soft:#c4787828;--accent-glow:#c4787820;
+  --link:#a88cc4;
+  --vowel:#7a9ac0;--vowel-bg:#5b6e8a18;
+  --cons:#b8a868;--cons-bg:#7a6b3e15;
+  --diph:#a88cc4;--diph-bg:#6b4c8a15;
+  --long-v:#6ca0b4;--short-v:#b8a868;
+  --toggle-bg:#3a332a;--toggle-knob:#e0d8cc;
+  --key-bg:#2a2520;--key-border:#3a332a;--key-hover:#352f28;--key-active:#3a332a;
+  --mod-bg:#302920;--mod-border:#4a4030;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans Pro',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased;transition:background .35s,color .35s}
+.container{max-width:720px;margin:0 auto;padding:40px 20px 100px}
+
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.theme-toggle-label{font-size:12px;font-weight:600;color:var(--ink-faint);letter-spacing:.04em}
+.toggle-track{width:44px;height:24px;background:var(--toggle-bg);border-radius:12px;position:relative;transition:background .35s}
+.toggle-knob{width:18px;height:18px;background:var(--toggle-knob);border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .35s,background .35s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-icon{position:absolute;font-size:12px;top:4px;transition:opacity .25s}
+.toggle-icon.sun{right:5px;opacity:1}.toggle-icon.moon{left:5px;opacity:0}
+[data-theme="dark"] .toggle-knob{transform:translateX(20px)}
+[data-theme="dark"] .toggle-icon.sun{opacity:0}
+[data-theme="dark"] .toggle-icon.moon{opacity:1}
+
+header{text-align:center;margin-bottom:28px}
+header h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.2;margin-bottom:6px}
+header p{font-size:14px;color:var(--ink-faint)}
+
+/* Dialect toggle */
+.dialect-toggle{display:flex;justify-content:center;gap:0;margin-bottom:20px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;overflow:hidden;max-width:300px;margin-left:auto;margin-right:auto;transition:background .35s,border-color .35s}
+.dialect-btn{flex:1;padding:10px 16px;font-family:'Source Sans Pro',sans-serif;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--ink-faint)}
+.dialect-btn:hover{color:var(--ink)}
+.dialect-btn.active{background:var(--accent);color:#fff}
+[data-theme="dark"] .dialect-btn.active{color:#1a1614}
+
+/* Input area */
+.input-area{margin-bottom:24px}
+.input-row{display:flex;gap:10px;margin-bottom:12px}
+.greek-input{flex:1;font-family:'Noto Serif',serif;font-size:28px;padding:14px 18px;border:2px solid var(--card-border);border-radius:10px;background:var(--card-bg);color:var(--accent);outline:none;transition:border-color .2s,background .35s;letter-spacing:.04em}
+.greek-input:focus{border-color:var(--accent)}
+.greek-input::placeholder{color:var(--ink-faint);font-size:18px;font-family:'Source Sans Pro',sans-serif}
+.analyze-btn{padding:14px 24px;font-family:'Source Sans Pro',sans-serif;font-size:15px;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:10px;cursor:pointer;transition:background .2s;white-space:nowrap}
+.analyze-btn:hover{opacity:.9}
+[data-theme="dark"] .analyze-btn{color:#1a1614}
+
+/* Keyboard */
+.keyboard{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:12px;margin-bottom:24px;transition:background .35s,border-color .35s}
+.kb-row{display:flex;justify-content:center;gap:4px;margin-bottom:4px}
+.kb-row:last-child{margin-bottom:0}
+.kb-key{font-family:'Noto Serif',serif;font-size:20px;min-width:36px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--key-bg);border:1px solid var(--key-border);border-radius:6px;cursor:pointer;color:var(--ink);transition:all .1s;user-select:none;padding:0 4px}
+.kb-key:hover{background:var(--key-hover)}
+.kb-key:active{background:var(--key-active);transform:scale(.95)}
+.kb-key.wide{min-width:56px;font-size:13px;font-family:'Source Sans Pro',sans-serif;font-weight:600;color:var(--ink-light)}
+.kb-key.extra-wide{min-width:80px;font-size:13px;font-family:'Source Sans Pro',sans-serif;font-weight:600;color:var(--ink-light)}
+.kb-key.mod{background:var(--mod-bg);border-color:var(--mod-border);font-size:16px;color:var(--accent);min-width:44px}
+.kb-key.mod:hover{border-color:var(--accent)}
+.kb-key.active{background:var(--accent-soft);border-color:var(--accent)}
+.kb-label{font-size:9px;color:var(--ink-faint);text-align:center;margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.kb-section{margin-top:6px;padding-top:8px;border-top:1px solid var(--card-border)}
+
+/* Results */
+.results{display:none}
+.result-word{text-align:center;margin-bottom:20px}
+.result-word-greek{font-family:'Noto Serif',serif;font-size:48px;color:var(--accent);letter-spacing:.05em;margin-bottom:4px}
+.result-phonetic{font-size:18px;color:var(--ink-light);font-family:'Cormorant Garamond',serif;font-style:italic;margin-bottom:4px}
+.result-notes{font-size:13px;color:var(--ink-faint)}
+
+.breakdown-label{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink-light);margin-bottom:12px}
+
+.phoneme-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.phoneme-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;padding:12px 14px;min-width:80px;text-align:center;transition:background .35s,border-color .35s;flex-shrink:0}
+.phoneme-card.is-vowel{border-left:3px solid var(--vowel)}
+.phoneme-card.is-cons{border-left:3px solid var(--cons)}
+.phoneme-card.is-diph{border-left:3px solid var(--diph)}
+.phoneme-greek{font-family:'Noto Serif',serif;font-size:32px;color:var(--accent);margin-bottom:4px}
+.phoneme-name{font-size:12px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.phoneme-sound{font-size:14px;color:var(--ink);font-weight:600;margin-bottom:2px}
+.phoneme-detail{font-size:12px;color:var(--ink-faint);line-height:1.4}
+.phoneme-length{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+.phoneme-length.long{background:var(--vowel-bg);color:var(--long-v)}
+.phoneme-length.short{background:var(--cons-bg);color:var(--short-v)}
+
+.accent-guide{background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;padding:16px 18px;margin-top:16px;transition:background .35s}
+.accent-guide-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink-light);margin-bottom:6px}
+.accent-guide p{font-size:14px;color:var(--ink-light);margin-bottom:4px}
+.accent-guide p:last-child{margin-bottom:0}
+
+.arrow-between{display:flex;align-items:center;color:var(--ink-faint);font-size:20px;padding:0 2px;flex-shrink:0}
+
+@media(max-width:500px){
+  .container{padding:32px 12px 80px}
+  header h1{font-size:26px}
+  .greek-input{font-size:22px;padding:12px 14px}
+  .kb-key{min-width:28px;height:36px;font-size:17px}
+  .kb-key.wide{min-width:44px}
+  .kb-key.extra-wide{min-width:64px}
+  .kb-key.mod{min-width:36px;font-size:14px}
+  .result-word-greek{font-size:36px}
+  .phoneme-card{min-width:70px;padding:10px}
+  .theme-toggle{top:10px;right:10px}
+  .theme-toggle-label{display:none}
+  .input-row{flex-direction:column;gap:8px}
+  .home-link{top:10px;left:10px}
+}
+.home-link{position:fixed;top:16px;left:16px;z-index:100;font-size:12px;font-weight:600;color:var(--ink-faint);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.home-link:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<a class="home-link" href="index.html">&#8592; Home</a>
+
+<div class="theme-toggle" onclick="toggleTheme()" role="button" tabindex="0">
+  <span class="theme-toggle-label">Dark mode</span>
+  <div class="toggle-track">
+    <span class="toggle-icon sun">&#9788;</span>
+    <span class="toggle-icon moon">&#9790;</span>
+    <div class="toggle-knob"></div>
+  </div>
+</div>
+
+<div class="container">
+<header>
+  <h1>&#928;&#8182;&#962; &#955;&#941;&#947;&#949;&#964;&#945;&#953;;</h1>
+  <p>Type or tap a Greek word and see how each sound is pronounced</p>
+</header>
+
+<div class="dialect-toggle">
+  <button class="dialect-btn active" id="btnAttic" onclick="setDialect('attic')">Classical Attic</button>
+  <button class="dialect-btn" id="btnKoine" onclick="setDialect('koine')">Koine</button>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <input type="text" class="greek-input" id="greekInput" placeholder="Type Greek here..." autocomplete="off" spellcheck="false">
+    <button class="analyze-btn" onclick="analyze()">Break Down</button>
+  </div>
+</div>
+
+<!-- KEYBOARD -->
+<div class="keyboard" id="keyboard">
+  <div class="kb-label">Greek Letters (tap to type)</div>
+  <div class="kb-row">
+    <div class="kb-key" data-char="&#945;">&#945;</div>
+    <div class="kb-key" data-char="&#946;">&#946;</div>
+    <div class="kb-key" data-char="&#947;">&#947;</div>
+    <div class="kb-key" data-char="&#948;">&#948;</div>
+    <div class="kb-key" data-char="&#949;">&#949;</div>
+    <div class="kb-key" data-char="&#950;">&#950;</div>
+    <div class="kb-key" data-char="&#951;">&#951;</div>
+    <div class="kb-key" data-char="&#952;">&#952;</div>
+    <div class="kb-key" data-char="&#953;">&#953;</div>
+    <div class="kb-key" data-char="&#954;">&#954;</div>
+  </div>
+  <div class="kb-row">
+    <div class="kb-key" data-char="&#955;">&#955;</div>
+    <div class="kb-key" data-char="&#956;">&#956;</div>
+    <div class="kb-key" data-char="&#957;">&#957;</div>
+    <div class="kb-key" data-char="&#958;">&#958;</div>
+    <div class="kb-key" data-char="&#959;">&#959;</div>
+    <div class="kb-key" data-char="&#960;">&#960;</div>
+    <div class="kb-key" data-char="&#961;">&#961;</div>
+    <div class="kb-key" data-char="&#963;">&#963;</div>
+    <div class="kb-key" data-char="&#964;">&#964;</div>
+  </div>
+  <div class="kb-row">
+    <div class="kb-key wide" id="shiftKey" onclick="toggleShift()">&#8679; Shift</div>
+    <div class="kb-key" data-char="&#965;">&#965;</div>
+    <div class="kb-key" data-char="&#966;">&#966;</div>
+    <div class="kb-key" data-char="&#967;">&#967;</div>
+    <div class="kb-key" data-char="&#968;">&#968;</div>
+    <div class="kb-key" data-char="&#969;">&#969;</div>
+    <div class="kb-key" data-char="&#962;">&#962;</div>
+    <div class="kb-key wide" onclick="kbBackspace()">&#9003;</div>
+  </div>
+  <div class="kb-section">
+    <div class="kb-label">Diacriticals (applied to last vowel)</div>
+    <div class="kb-row">
+      <div class="kb-key mod" onclick="addDiacrit(0x0313)" title="Smooth breathing">&#x1F00;</div>
+      <div class="kb-key mod" onclick="addDiacrit(0x0314)" title="Rough breathing">&#x1F01;</div>
+      <div class="kb-key mod" onclick="addDiacrit(0x0301)" title="Acute accent">&#x03AC;</div>
+      <div class="kb-key mod" onclick="addDiacrit(0x0300)" title="Grave accent">&#x1F70;</div>
+      <div class="kb-key mod" onclick="addDiacrit(0x0342)" title="Circumflex">&#x1FB6;</div>
+      <div class="kb-key mod" onclick="addDiacrit(0x0345)" title="Iota subscript">&#x1FB3;</div>
+      <div class="kb-key extra-wide" onclick="kbClear()">Clear</div>
+      <div class="kb-key extra-wide" onclick="kbSpace()">Space</div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="results" id="results">
+  <div class="result-word">
+    <div class="result-word-greek" id="resultWord"></div>
+    <div class="result-phonetic" id="resultPhonetic"></div>
+    <div class="result-notes" id="resultNotes"></div>
+  </div>
+  <div class="breakdown-label">Letter-by-letter breakdown:</div>
+  <div class="phoneme-grid" id="phonemeGrid"></div>
+  <div class="accent-guide" id="accentGuide"></div>
+</div>
+</div>
+
+<script>
+// ═══════ DATA ═══════
+var vowels = '\u03B1\u03B5\u03B7\u03B9\u03BF\u03C5\u03C9\u0391\u0395\u0397\u0399\u039F\u03A5\u03A9';
+var diphthongPairs = ['αι','ει','οι','αυ','ευ','ου','υι','ηυ','ᾳ','ῃ','ῳ',
+                      'Αι','Ει','Οι','Αυ','Ευ','Ου','Υι','Ηυ'];
+
+var currentDialect = 'attic';
+
+var atticLetters = {
+  'α':{name:'alpha',type:'v',sound:'ah',desc:'as in "father"',len:'short/long'},
+  'β':{name:'beta',type:'c',sound:'b',desc:'as in "bed"'},
+  'γ':{name:'gamma',type:'c',sound:'g',desc:'hard g as in "get"'},
+  'δ':{name:'delta',type:'c',sound:'d',desc:'as in "dog"'},
+  'ε':{name:'epsilon',type:'v',sound:'eh',desc:'as in "bed"',len:'short'},
+  'ζ':{name:'zeta',type:'c',sound:'dz',desc:'as in "adze"'},
+  'η':{name:'eta',type:'v',sound:'ay',desc:'open e as in "hair"',len:'long'},
+  'θ':{name:'theta',type:'c',sound:'t\u02B0',desc:'aspirated t (puff of air), as in "top"'},
+  'ι':{name:'iota',type:'v',sound:'i/ee',desc:'short: "bit" \u00B7 long: "meet"',len:'short/long'},
+  'κ':{name:'kappa',type:'c',sound:'k',desc:'unaspirated, as in "skip"'},
+  'λ':{name:'lambda',type:'c',sound:'l',desc:'as in "lamp"'},
+  'μ':{name:'mu',type:'c',sound:'m',desc:'as in "map"'},
+  'ν':{name:'nu',type:'c',sound:'n',desc:'as in "net"'},
+  'ξ':{name:'xi',type:'c',sound:'ks',desc:'as in "box"'},
+  'ο':{name:'omicron',type:'v',sound:'o',desc:'as in "pot"',len:'short'},
+  'π':{name:'pi',type:'c',sound:'p',desc:'unaspirated, as in "spin"'},
+  'ρ':{name:'rho',type:'c',sound:'r',desc:'trilled r (Spanish-style)'},
+  'σ':{name:'sigma',type:'c',sound:'s',desc:'as in "sun"'},
+  'ς':{name:'sigma (final)',type:'c',sound:'s',desc:'as in "sun" (end of word)'},
+  'τ':{name:'tau',type:'c',sound:'t',desc:'unaspirated, as in "stop"'},
+  'υ':{name:'upsilon',type:'v',sound:'\u00FC',desc:'French "u" in "tu" (no English equivalent)',len:'short/long'},
+  'φ':{name:'phi',type:'c',sound:'p\u02B0',desc:'aspirated p (puff of air), as in "pin"'},
+  'χ':{name:'chi',type:'c',sound:'k\u02B0',desc:'aspirated k (puff of air), as in "kid"'},
+  'ψ':{name:'psi',type:'c',sound:'ps',desc:'as in "tips"'},
+  'ω':{name:'omega',type:'v',sound:'oh',desc:'as in "bone"',len:'long'}
+};
+
+var koineLetters = {
+  'α':{name:'alpha',type:'v',sound:'ah',desc:'as in "father"',len:'short/long'},
+  'β':{name:'beta',type:'c',sound:'v',desc:'as in "vine" (shifted from classical "b")'},
+  'γ':{name:'gamma',type:'c',sound:'\u0263',desc:'soft gargle; like g but fricative. Still hard g before \u03B3/\u03BA/\u03BE/\u03C7'},
+  'δ':{name:'delta',type:'c',sound:'\u00F0',desc:'as "th" in "the" (shifted from classical "d")'},
+  'ε':{name:'epsilon',type:'v',sound:'eh',desc:'as in "bed"',len:'short'},
+  'ζ':{name:'zeta',type:'c',sound:'z',desc:'as in "zone" (simplified from classical "dz")'},
+  'η':{name:'eta',type:'v',sound:'ee',desc:'as in "meet" (merged toward iota)',len:'long'},
+  'θ':{name:'theta',type:'c',sound:'th',desc:'as "th" in "think" (no longer aspirated t)'},
+  'ι':{name:'iota',type:'v',sound:'ee',desc:'as in "meet"',len:'short/long'},
+  'κ':{name:'kappa',type:'c',sound:'k',desc:'as in "skip"'},
+  'λ':{name:'lambda',type:'c',sound:'l',desc:'as in "lamp"'},
+  'μ':{name:'mu',type:'c',sound:'m',desc:'as in "map"'},
+  'ν':{name:'nu',type:'c',sound:'n',desc:'as in "net"'},
+  'ξ':{name:'xi',type:'c',sound:'ks',desc:'as in "box"'},
+  'ο':{name:'omicron',type:'v',sound:'o',desc:'as in "pot"',len:'short'},
+  'π':{name:'pi',type:'c',sound:'p',desc:'as in "spin"'},
+  'ρ':{name:'rho',type:'c',sound:'r',desc:'trilled or tapped r'},
+  'σ':{name:'sigma',type:'c',sound:'s',desc:'as in "sun"'},
+  'ς':{name:'sigma (final)',type:'c',sound:'s',desc:'as in "sun" (end of word)'},
+  'τ':{name:'tau',type:'c',sound:'t',desc:'as in "stop"'},
+  'υ':{name:'upsilon',type:'v',sound:'ee',desc:'as in "meet" (merged toward iota)',len:'short/long'},
+  'φ':{name:'phi',type:'c',sound:'f',desc:'as in "fun" (no longer aspirated p)'},
+  'χ':{name:'chi',type:'c',sound:'ch',desc:'as in Scottish "loch" (no longer aspirated k)'},
+  'ψ':{name:'psi',type:'c',sound:'ps',desc:'as in "tips"'},
+  'ω':{name:'omega',type:'v',sound:'oh',desc:'as in "bone"',len:'long'}
+};
+
+var atticDiphs = {
+  'αι':{name:'alpha-iota',sound:'ai',desc:'as in "aisle"'},
+  'ει':{name:'epsilon-iota',sound:'ey',desc:'as in "reign" or "day"'},
+  'οι':{name:'omicron-iota',sound:'oi',desc:'as in "oil"'},
+  'αυ':{name:'alpha-upsilon',sound:'ow',desc:'as in "cow"'},
+  'ευ':{name:'epsilon-upsilon',sound:'eu',desc:'"eh" gliding to "oo" (like "feud" without the y)'},
+  'ου':{name:'omicron-upsilon',sound:'oo',desc:'as in "moon"'},
+  'υι':{name:'upsilon-iota',sound:'\u00FCi',desc:'French "u" gliding to "ee" (rare)'},
+  'ηυ':{name:'eta-upsilon',sound:'ayu',desc:'"ay" gliding to "oo" (rare)'}
+};
+
+var koineDiphs = {
+  'αι':{name:'alpha-iota',sound:'e',desc:'as in "bed" (monophthongized from classical "ai")'},
+  'ει':{name:'epsilon-iota',sound:'ee',desc:'as in "meet" (merged with iota)'},
+  'οι':{name:'omicron-iota',sound:'ee',desc:'as in "meet" (merged toward iota)'},
+  'αυ':{name:'alpha-upsilon',sound:'av/af',desc:'"av" before voiced sounds, "af" before voiceless'},
+  'ευ':{name:'epsilon-upsilon',sound:'ev/ef',desc:'"ev" before voiced sounds, "ef" before voiceless'},
+  'ου':{name:'omicron-upsilon',sound:'oo',desc:'as in "moon"'},
+  'υι':{name:'upsilon-iota',sound:'ee',desc:'as in "meet" (rare)'},
+  'ηυ':{name:'eta-upsilon',sound:'eev/eef',desc:'"eev" before voiced, "eef" before voiceless'}
+};
+
+// Active data references (switched by dialect toggle)
+var letterData = atticLetters;
+var diphData = atticDiphs;
+
+function setDialect(d){
+  currentDialect = d;
+  letterData = d === 'koine' ? koineLetters : atticLetters;
+  diphData = d === 'koine' ? koineDiphs : atticDiphs;
+  document.getElementById('btnAttic').classList.toggle('active', d === 'attic');
+  document.getElementById('btnKoine').classList.toggle('active', d === 'koine');
+  // Re-analyze if there's content
+  var val = document.getElementById('greekInput').value.trim();
+  if(val) analyze();
+}
+
+// ═══════ KEYBOARD ═══════
+var shiftOn = false;
+
+var lowerToUpper = {
+  'α':'Α','β':'Β','γ':'Γ','δ':'Δ','ε':'Ε','ζ':'Ζ','η':'Η','θ':'Θ','ι':'Ι','κ':'Κ',
+  'λ':'Λ','μ':'Μ','ν':'Ν','ξ':'Ξ','ο':'Ο','π':'Π','ρ':'Ρ','σ':'Σ','τ':'Τ',
+  'υ':'Υ','φ':'Φ','χ':'Χ','ψ':'Ψ','ω':'Ω','ς':'Σ'
+};
+
+document.querySelectorAll('.kb-key[data-char]').forEach(function(k){
+  k.addEventListener('click', function(){
+    var ch = this.getAttribute('data-char');
+    if(shiftOn && lowerToUpper[ch]) ch = lowerToUpper[ch];
+    var inp = document.getElementById('greekInput');
+    var pos = inp.selectionStart || inp.value.length;
+    inp.value = inp.value.slice(0,pos) + ch + inp.value.slice(pos);
+    inp.focus();
+    inp.setSelectionRange(pos+ch.length, pos+ch.length);
+  });
+});
+
+function toggleShift(){
+  shiftOn = !shiftOn;
+  document.getElementById('shiftKey').classList.toggle('active', shiftOn);
+  document.querySelectorAll('.kb-key[data-char]').forEach(function(k){
+    var ch = k.getAttribute('data-char');
+    k.textContent = shiftOn && lowerToUpper[ch] ? lowerToUpper[ch] : ch;
+  });
+}
+
+function kbBackspace(){
+  var inp = document.getElementById('greekInput');
+  var pos = inp.selectionStart || inp.value.length;
+  if(pos > 0){
+    // Handle composed characters: normalize to NFC, remove last visible char
+    var before = inp.value.slice(0, pos);
+    var arr = Array.from(before);
+    arr.pop();
+    inp.value = arr.join('') + inp.value.slice(pos);
+    inp.focus();
+    var np = arr.join('').length;
+    inp.setSelectionRange(np, np);
+  }
+}
+
+function kbClear(){
+  var inp = document.getElementById('greekInput');
+  inp.value = '';
+  inp.focus();
+  document.getElementById('results').style.display = 'none';
+}
+
+function kbSpace(){
+  var inp = document.getElementById('greekInput');
+  var pos = inp.selectionStart || inp.value.length;
+  inp.value = inp.value.slice(0,pos) + ' ' + inp.value.slice(pos);
+  inp.focus();
+  inp.setSelectionRange(pos+1, pos+1);
+}
+
+function addDiacrit(combCode){
+  var inp = document.getElementById('greekInput');
+  var val = inp.value;
+  // Find last vowel base character
+  var nfd = val.normalize('NFD');
+  var lastVowelIdx = -1;
+  for(var i = nfd.length - 1; i >= 0; i--){
+    if(vowels.indexOf(nfd[i]) >= 0){
+      lastVowelIdx = i;
+      break;
+    }
+  }
+  if(lastVowelIdx < 0) return;
+
+  // Check if this combining mark already exists after this vowel
+  var insertIdx = lastVowelIdx + 1;
+  while(insertIdx < nfd.length && nfd.charCodeAt(insertIdx) >= 0x0300 && nfd.charCodeAt(insertIdx) <= 0x036F || 
+        insertIdx < nfd.length && (nfd.charCodeAt(insertIdx) === 0x0342 || nfd.charCodeAt(insertIdx) === 0x0345)){
+    var existing = nfd.charCodeAt(insertIdx);
+    // Remove conflicting marks of same category
+    if(combCode === 0x0313 || combCode === 0x0314){
+      if(existing === 0x0313 || existing === 0x0314){
+        nfd = nfd.slice(0, insertIdx) + nfd.slice(insertIdx+1);
+        continue;
+      }
+    }
+    if(combCode === 0x0301 || combCode === 0x0300 || combCode === 0x0342){
+      if(existing === 0x0301 || existing === 0x0300 || existing === 0x0342){
+        nfd = nfd.slice(0, insertIdx) + nfd.slice(insertIdx+1);
+        continue;
+      }
+    }
+    insertIdx++;
+  }
+
+  nfd = nfd.slice(0, lastVowelIdx+1) + String.fromCharCode(combCode) + nfd.slice(lastVowelIdx+1);
+  inp.value = nfd.normalize('NFC');
+  inp.focus();
+}
+
+// ═══════ ANALYSIS ═══════
+document.getElementById('greekInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){e.preventDefault(); analyze();}
+});
+
+function analyze(){
+  var raw = document.getElementById('greekInput').value.trim();
+  if(!raw) return;
+  
+  // Process each word
+  var words = raw.split(/\s+/);
+  var allPhonemes = [];
+  var allIPA = [];
+  
+  words.forEach(function(word, wi){
+    if(wi > 0){
+      allPhonemes.push({type:'space'});
+      allIPA.push(' ');
+    }
+    var nfd = word.normalize('NFD');
+    var groups = [];
+    var current = null;
+    
+    for(var i = 0; i < nfd.length; i++){
+      var ch = nfd[i];
+      var code = ch.charCodeAt(0);
+      var isCombining = (code >= 0x0300 && code <= 0x036F) || code === 0x0342 || code === 0x0345;
+      
+      if(isCombining && current){
+        current.combiners.push(code);
+      } else {
+        if(current) groups.push(current);
+        current = {base: ch, baseLower: ch.toLowerCase(), combiners: [], idx: i};
+      }
+    }
+    if(current) groups.push(current);
+    
+    // Now detect diphthongs and build phonemes
+    var gi = 0;
+    while(gi < groups.length){
+      var g = groups[gi];
+      var base = g.baseLower;
+      var hasDiaeresis = g.combiners.indexOf(0x0308) >= 0;
+      var hasIotaSub = g.combiners.indexOf(0x0345) >= 0;
+      
+      // Check for diphthong with next group
+      var isDiph = false;
+      if(!hasDiaeresis && gi + 1 < groups.length){
+        var next = groups[gi+1];
+        var nextHasDiaeresis = next.combiners.indexOf(0x0308) >= 0;
+        if(!nextHasDiaeresis){
+          var pair = base + next.baseLower;
+          if(diphData[pair]){
+            isDiph = true;
+            var dd = diphData[pair];
+            var display = reconstructChar(g) + reconstructChar(next);
+            var breathing = getBreathing(g);
+            var accent = getAccent(g) || getAccent(next);
+            var ipa = (breathing === 'rough' ? 'h' : '') + dd.sound;
+            
+            allPhonemes.push({
+              type:'diph', display:display, name:dd.name,
+              sound:dd.sound, desc:dd.desc,
+              breathing:breathing, accent:accent, ipa:ipa
+            });
+            allIPA.push(ipa);
+            gi += 2;
+            continue;
+          }
+        }
+      }
+      
+      // Single character
+      var ld = letterData[base] || letterData[g.base];
+      if(ld){
+        var breathing = getBreathing(g);
+        var accent = getAccent(g);
+        var display = reconstructChar(g);
+        var ipa = (breathing === 'rough' ? 'h' : '') + ld.sound;
+        
+        var ph = {
+          type:ld.type === 'v' ? 'vowel' : 'cons',
+          display:display, name:ld.name,
+          sound:ld.sound, desc:ld.desc,
+          breathing:breathing, accent:accent, ipa:ipa
+        };
+        if(ld.len) ph.length = ld.len;
+        if(hasIotaSub){
+          ph.desc += ' + silent iota subscript';
+          ph.name += ' + iota sub.';
+        }
+        
+        allPhonemes.push(ph);
+        allIPA.push(ipa);
+      } else {
+        allPhonemes.push({type:'unknown', display:g.base, name:'?', sound:'?', desc:'unrecognized'});
+        allIPA.push('?');
+      }
+      gi++;
+    }
+  });
+  
+  // Render
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('resultWord').textContent = raw;
+  document.getElementById('resultPhonetic').textContent = '/' + allIPA.join('') + '/';
+  
+  // Detect geminated (double) consonants
+  for(var pi = 0; pi < allPhonemes.length - 1; pi++){
+    var curr = allPhonemes[pi], nxt = allPhonemes[pi+1];
+    if(curr.type === 'cons' && nxt.type === 'cons' && curr.name && nxt.name){
+      var cn = curr.name.replace(' (final)',''), nn = nxt.name.replace(' (final)','');
+      if(cn === nn){
+        curr.geminate = 'first';
+        nxt.geminate = 'second';
+      }
+    }
+  }
+  
+  // Check for breathing
+  var hasRough = allPhonemes.some(function(p){return p.breathing === 'rough'});
+  var hasGeminate = allPhonemes.some(function(p){return p.geminate});
+  var notes = [];
+  if(hasRough) notes.push('Rough breathing: starts with an "h" sound');
+  if(hasGeminate) notes.push('Double consonant: hold the sound longer across the syllable break');
+  
+  var accents = allPhonemes.filter(function(p){return p.accent});
+  if(accents.length > 0){
+    accents.forEach(function(a){
+      if(a.accent === 'acute') notes.push('Acute accent on ' + a.name + ': pitch rises');
+      if(a.accent === 'grave') notes.push('Grave accent on ' + a.name + ': pitch stays level');
+      if(a.accent === 'circumflex') notes.push('Circumflex on ' + a.name + ': pitch rises then falls');
+    });
+  }
+  
+  document.getElementById('resultNotes').textContent = notes.join(' · ');
+  
+  var grid = document.getElementById('phonemeGrid');
+  grid.innerHTML = '';
+  
+  allPhonemes.forEach(function(ph, idx){
+    if(ph.type === 'space'){
+      var sp = document.createElement('div');
+      sp.className = 'arrow-between';
+      sp.textContent = '·';
+      grid.appendChild(sp);
+      return;
+    }
+    
+    var card = document.createElement('div');
+    var cls = 'phoneme-card';
+    if(ph.type === 'vowel') cls += ' is-vowel';
+    else if(ph.type === 'cons') cls += ' is-cons';
+    else if(ph.type === 'diph') cls += ' is-diph';
+    card.className = cls;
+    
+    var html = '<div class="phoneme-greek">' + escH(ph.display) + '</div>';
+    html += '<div class="phoneme-name">' + escH(ph.name) + '</div>';
+    html += '<div class="phoneme-sound">' + escH(ph.ipa) + '</div>';
+    html += '<div class="phoneme-detail">' + escH(ph.desc) + '</div>';
+    
+    if(ph.breathing){
+      html += '<div class="phoneme-detail" style="margin-top:3px;color:var(--accent)">' + 
+              (ph.breathing === 'rough' ? '῾ rough breathing (+h)' : '᾿ smooth breathing') + '</div>';
+    }
+    if(ph.accent){
+      var accDesc = {acute:'´ acute (pitch rises)', grave:'` grave (pitch level)', circumflex:'˜ circumflex (rise-fall)'};
+      html += '<div class="phoneme-detail" style="margin-top:3px;color:var(--link)">' + (accDesc[ph.accent]||'') + '</div>';
+    }
+    if(ph.geminate){
+      html += '<div class="phoneme-detail" style="margin-top:3px;color:var(--cons);font-weight:600">' +
+              (ph.geminate === 'first' ? '⟩ double: hold this sound\u2014' : '\u2014it bridges the syllable break') + '</div>';
+    }
+    if(ph.length){
+      if(ph.length === 'long') html += '<span class="phoneme-length long">long</span>';
+      else if(ph.length === 'short') html += '<span class="phoneme-length short">short</span>';
+      else html += '<span class="phoneme-length short">short or long</span>';
+    }
+    
+    card.innerHTML = html;
+    grid.appendChild(card);
+    
+    if(idx < allPhonemes.length - 1 && allPhonemes[idx+1].type !== 'space'){
+      var arrow = document.createElement('div');
+      arrow.className = 'arrow-between';
+      // Show a linking symbol between geminated consonants
+      if(ph.geminate === 'first' && allPhonemes[idx+1].geminate === 'second'){
+        arrow.textContent = '⟷';
+        arrow.style.color = 'var(--cons)';
+        arrow.style.fontWeight = '700';
+      } else {
+        arrow.textContent = '+';
+      }
+      grid.appendChild(arrow);
+    }
+  });
+  
+  // Accent guide
+  var ag = document.getElementById('accentGuide');
+  if(accents.length > 0){
+    ag.style.display = 'block';
+    if(currentDialect === 'attic'){
+      ag.innerHTML = '<div class="accent-guide-title">Pitch Accent Guide (Classical Attic)</div>' +
+        '<p>In classical Attic, accent marks indicate <strong>pitch</strong>, not loudness. '+
+        'The acute (\u00B4) means the voice goes <strong>higher</strong> on that syllable. '+
+        'The circumflex (\u02DC) means it <strong>rises then falls</strong> within one syllable. '+
+        'The grave (`) replaces an acute on the last syllable in connected speech, keeping the pitch <strong>level</strong>.</p>';
+    } else {
+      ag.innerHTML = '<div class="accent-guide-title">Stress Accent Guide (Koine)</div>' +
+        '<p>By the Koine period, the pitch accent was shifting to a <strong>stress</strong> accent (louder, not higher). '+
+        'The accented syllable is simply <strong>emphasized</strong>, like English stress. '+
+        'The acute (\u00B4) and circumflex (\u02DC) both mark the stressed syllable. '+
+        'The grave (`) on a final syllable means the stress is reduced in connected speech.</p>';
+    }
+  } else {
+    ag.style.display = 'none';
+  }
+  
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function getBreathing(g){
+  if(g.combiners.indexOf(0x0314) >= 0) return 'rough';
+  if(g.combiners.indexOf(0x0313) >= 0) return 'smooth';
+  return null;
+}
+
+function getAccent(g){
+  if(g.combiners.indexOf(0x0301) >= 0) return 'acute';
+  if(g.combiners.indexOf(0x0300) >= 0) return 'grave';
+  if(g.combiners.indexOf(0x0342) >= 0) return 'circumflex';
+  return null;
+}
+
+function reconstructChar(g){
+  var s = g.base;
+  g.combiners.forEach(function(c){ s += String.fromCharCode(c); });
+  return s.normalize('NFC');
+}
+
+function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ═══════ THEME ═══════
+function toggleTheme(){
+  var h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';
+  h.setAttribute('data-theme',n);
+  try{localStorage.setItem('greek-plan-theme',n)}catch(e){}
+}
+try{
+  var s=localStorage.getItem('greek-plan-theme');
+  if(s==='dark')document.documentElement.setAttribute('data-theme','dark');
+  else if(!s&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');
+}catch(e){}
+</script>
+</body>
+</html>
