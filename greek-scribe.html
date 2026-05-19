@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>ΓΡΑΦΕΥΣ — Greek Scribe</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #2a1f15;
+      --bg-deep: #1a120a;
+      --parchment: #efdfb4;
+      --parchment-shadow: #c7b481;
+      --ink: #4a2e15;
+      --ink-light: #7a5230;
+      --gold: #d9b04a;
+      --quill-bg: #3d2818;
+      --quill-edge: #5c3d24;
+      --highlight: #f5e8c2;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at top, var(--bg) 0%, var(--bg-deep) 100%);
+      font-family: 'Gentium Plus', 'Gentium Book Basic', 'Cardo', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+      color: var(--parchment);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      gap: 1rem;
+      min-height: 100vh;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .ui {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .title {
+      font-size: 1.7rem;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+    }
+    .counters {
+      display: flex;
+      gap: 0.8rem;
+      font-size: 1rem;
+    }
+    .counter {
+      background: rgba(0,0,0,0.35);
+      padding: 0.35rem 0.8rem;
+      border-radius: 0.4rem;
+    }
+    .counter-value {
+      color: var(--gold);
+      font-weight: bold;
+      margin-left: 0.3rem;
+    }
+
+    .scroll {
+      width: 100%;
+      max-width: 800px;
+      flex: 1 1 auto;
+      min-height: 60vh;
+      background:
+        linear-gradient(180deg, var(--parchment) 0%, #e6d29a 100%);
+      color: var(--ink);
+      border-radius: 0.5rem;
+      padding: 2rem 2.4rem;
+      box-shadow:
+        inset 0 0 3rem rgba(140, 100, 50, 0.2),
+        0 1.2rem 2.5rem rgba(0,0,0,0.55);
+      font-size: 1.7rem;
+      line-height: 1.9;
+      letter-spacing: 0.02em;
+      overflow-y: auto;
+      position: relative;
+    }
+    .scroll::before, .scroll::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 0.6rem;
+      background: linear-gradient(180deg, var(--parchment-shadow), transparent);
+      pointer-events: none;
+    }
+    .scroll::before { top: 0; }
+    .scroll::after  { bottom: 0; transform: scaleY(-1); }
+
+    .word {
+      display: inline-block;
+      margin-right: 0.6rem;
+      padding: 0.05rem 0.15rem;
+      border-radius: 0.2rem;
+      transition: background 200ms;
+    }
+    .word.completed:hover { background: rgba(120, 80, 40, 0.12); cursor: help; }
+    .word .meaning {
+      margin-left: 0.4rem;
+      font-size: 1.6rem;
+      vertical-align: middle;
+      opacity: 0;
+      transform: scale(0.4);
+      display: inline-block;
+      transition: opacity 350ms ease-out, transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+    }
+    .word .meaning.show { opacity: 1; transform: scale(1); }
+    .word.current { color: var(--ink); }
+    .word.current::after {
+      content: '';
+      display: inline-block;
+      width: 0.5em;
+      height: 1.2em;
+      vertical-align: text-bottom;
+      background: var(--ink);
+      margin-left: 0.05em;
+      animation: blink 1s steps(2) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .quill-area {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .timer-bar {
+      width: 100%;
+      max-width: 320px;
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 200ms;
+    }
+    .timer-bar.show { opacity: 1; }
+    .timer-fill {
+      height: 100%;
+      width: 100%;
+      background: var(--gold);
+      transform-origin: left;
+    }
+
+    .quill {
+      width: 7rem;
+      height: 7rem;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%, var(--quill-edge), var(--quill-bg) 70%);
+      color: var(--parchment);
+      border: 3px solid var(--gold);
+      font-family: inherit;
+      font-size: 3.4rem;
+      cursor: pointer;
+      box-shadow:
+        0 0.6rem 1.2rem rgba(0,0,0,0.55),
+        inset 0 -0.3rem 0.8rem rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 80ms ease, box-shadow 200ms, opacity 200ms;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .quill:active { transform: scale(0.94); }
+    .quill:disabled { opacity: 0.4; cursor: default; }
+    .quill:disabled:active { transform: none; }
+
+    .hint {
+      font-size: 0.85rem;
+      opacity: 0.55;
+      max-width: 800px;
+      text-align: center;
+    }
+
+    /* Quiz mode */
+    .quiz {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 1.5rem 1rem;
+      width: 100%;
+    }
+    .quiz-label {
+      font-size: 1rem;
+      color: var(--ink-light);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .quiz-emoji {
+      font-size: 5rem;
+      line-height: 1;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+      animation: quizPrompt 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(2px 3px 2px rgba(0,0,0,0.18));
+    }
+    @keyframes quizPrompt {
+      0%   { opacity: 0; transform: scale(0.4); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .quiz-progress {
+      font-size: 2.4rem;
+      letter-spacing: 0.04em;
+      min-height: 3.2rem;
+      color: var(--ink);
+      padding: 0.2rem 0.8rem;
+      border-bottom: 2px dashed var(--ink-light);
+      min-width: 6rem;
+      text-align: center;
+    }
+    .quiz-progress::after {
+      content: '';
+      display: inline-block;
+      width: 0.5em;
+      height: 1em;
+      vertical-align: text-bottom;
+      background: var(--ink);
+      margin-left: 0.05em;
+      animation: blink 1s steps(2) infinite;
+    }
+    .quiz-progress.done::after { display: none; }
+    .quiz-progress.success {
+      color: #2d6a3a;
+      animation: pulse 0.5s ease-out;
+    }
+    .quiz-progress.skipped {
+      color: var(--ink-light);
+      opacity: 0.7;
+      font-style: italic;
+    }
+
+    .quiz-skip {
+      position: absolute;
+      top: 1rem;
+      right: 1.2rem;
+      background: rgba(60, 30, 10, 0.08);
+      border: 1px solid var(--ink-light);
+      color: var(--ink-light);
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.35rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 200ms, color 200ms;
+    }
+    .quiz-skip:hover { background: rgba(60, 30, 10, 0.2); color: var(--ink); }
+    .quiz {
+      position: relative;
+    }
+
+    .sentence {
+      display: block;
+      margin-bottom: 0.65rem;
+    }
+    .sentence:last-child { margin-bottom: 0; }
+
+    /* Hangman / ΑΙΝΙΓΜΑ mode */
+    .hangman-lives {
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+      font-size: 1.7rem;
+      letter-spacing: 0.15rem;
+      margin: 0.4rem 0 0.6rem;
+    }
+    .hangman-lives .life {
+      display: inline-block;
+      transition: transform 280ms, opacity 280ms;
+    }
+    .hangman-lives .life.lost {
+      opacity: 0.5;
+      transform: scale(0.85) rotate(-8deg);
+    }
+
+    .hangman-sentence {
+      font-size: 1.55rem;
+      line-height: 2.3;
+      text-align: center;
+      max-width: 100%;
+      margin: 0.6rem 0 0.8rem;
+      color: var(--ink);
+    }
+    .hg-word {
+      display: inline-block;
+      margin: 0.2rem 0.55rem;
+      position: relative;
+      padding-top: 1.5rem;
+      vertical-align: top;
+    }
+    .hg-word .hg-emoji {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.25rem;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+    }
+    .hg-char {
+      display: inline-block;
+      min-width: 0.75em;
+      text-align: center;
+      border-bottom: 2px solid var(--ink);
+      margin: 0 0.04em;
+      color: var(--ink);
+    }
+    .hg-char.hidden    { color: transparent; }
+    .hg-char.skipped   { color: var(--ink-light); opacity: 0.75; font-style: italic; }
+    .hg-char.revealed  { animation: revealLetter 360ms ease-out; }
+    @keyframes revealLetter {
+      0%   { transform: scale(1.55) translateY(-2px); color: #6a4a18; }
+      100% { transform: scale(1)    translateY(0);    color: var(--ink); }
+    }
+
+    .hangman-keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.32rem;
+      justify-content: center;
+      max-width: 580px;
+      margin-top: 0.4rem;
+    }
+    .hg-key {
+      background: rgba(60, 30, 10, 0.07);
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      padding: 0.4rem 0.7rem;
+      border-radius: 0.4rem;
+      font-family: inherit;
+      font-size: 1.15rem;
+      cursor: pointer;
+      min-width: 2.1rem;
+      transition: background 180ms, opacity 220ms, transform 80ms;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hg-key:hover:not(:disabled) { background: rgba(60, 30, 10, 0.18); }
+    .hg-key:active:not(:disabled) { transform: scale(0.93); }
+    .hg-key.used { cursor: default; }
+    .hg-key.miss { background: rgba(180, 60, 40, 0.22); opacity: 0.5; }
+    .hg-key.hit  { background: rgba(60, 130, 60, 0.18); border-color: #2d6a3a; opacity: 0.7; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
+    }
+    .quiz-letters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      justify-content: center;
+      max-width: 560px;
+    }
+    .quiz-letter {
+      background: rgba(60, 30, 10, 0.06);
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 0.45rem;
+      font-family: inherit;
+      font-size: 1.6rem;
+      cursor: pointer;
+      min-width: 2.6rem;
+      transition: transform 80ms, background 200ms, opacity 250ms;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .quiz-letter:hover:not(:disabled) { background: rgba(60, 30, 10, 0.16); }
+    .quiz-letter:active:not(:disabled) { transform: scale(0.92); }
+    .quiz-letter.used { opacity: 0.25; cursor: default; }
+    .quiz-letter.shaking {
+      animation: quizShake 0.4s ease-in-out;
+      background: rgba(180, 60, 40, 0.18);
+    }
+    @keyframes quizShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .home-link{position:fixed;top:1rem;left:1rem;z-index:100;font-size:0.82rem;font-family:inherit;color:var(--gold);text-decoration:none;letter-spacing:.08em;opacity:.55;transition:opacity .2s}
+    .home-link:hover{opacity:1}
+  </style>
+</head>
+<body>
+
+<a class="home-link" href="index.html">&#8592; Home</a>
+
+  <div class="ui">
+    <div class="title">ΓΡΑΦΕΥΣ</div>
+    <div class="counters">
+      <div class="counter">γράμματα <span class="counter-value" id="letters">0</span></div>
+      <div class="counter">λέξεις   <span class="counter-value" id="words">0</span></div>
+      <div class="counter">✓ <span class="counter-value" id="passed">0</span></div>
+    </div>
+  </div>
+
+  <div class="scroll" id="scroll"></div>
+
+  <div class="quill-area" id="quill-area">
+    <div class="timer-bar" id="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+    <button class="quill" id="quill" aria-label="write next letter">
+      <span id="next-letter">·</span>
+    </button>
+  </div>
+
+  <div class="hint" id="hint">Click the quill to write the next letter · Hover a finished word for its meaning</div>
+
+  <script>
+    (function () {
+      const WORDS = {
+        // gods (dual-emoji: attribute + symbol)
+        'Ἀπόλλων':  { en: 'Apollo',                  emoji: '🏹☀️' },
+        'Ἀθηνᾶ':   { en: 'Athena',                  emoji: '🦉🛡️' },
+        'Ζεύς':     { en: 'Zeus',                    emoji: '⚡👑' },
+        'Ἥφαιστος': { en: 'Hephaestus',              emoji: '⚒️🔥' },
+        'Ἑρμῆς':    { en: 'Hermes',                  emoji: '🪶⚕️' },
+        // function / abstract (no quiz emoji)
+        'ἐστιν':    { en: 'is',                      emoji: null },
+        'ἐστι':     { en: 'is',                      emoji: null },
+        'οὐκ':      { en: 'not',                     emoji: '🚫' },
+        'θεός':     { en: 'god',                     emoji: null },
+        'θεά':      { en: 'goddess',                 emoji: null },
+        // adjectives (gender-agreeing forms)
+        'καλός':    { en: 'good, beautiful (m.)',    emoji: '👍' },
+        'καλή':     { en: 'good, beautiful (f.)',    emoji: '👍' },
+        'καλόν':    { en: 'good, beautiful (n.)',    emoji: '👍' },
+        'κακός':    { en: 'bad (m.)',                emoji: '👎' },
+        'κακή':     { en: 'bad (f.)',                emoji: '👎' },
+        'κακόν':    { en: 'bad (n.)',                emoji: '👎' },
+        // nouns
+        'ἄνθρωπος': { en: 'person, human',           emoji: '🧑' },
+        'ἀνήρ':     { en: 'man',                     emoji: '👨' },
+        'γυνή':     { en: 'woman',                   emoji: '👩' },
+        'γέρων':    { en: 'old man',                 emoji: '👴' },
+        'παιδίον':  { en: 'little child',            emoji: '👶' },
+        'οἷκος':    { en: 'house',                   emoji: '🏠' },
+        'ναός':     { en: 'temple',                  emoji: '🏛️' },
+        'λίθος':    { en: 'stone',                   emoji: '🪨' },
+        'ἵππος':    { en: 'horse',                   emoji: '🐎' },
+        'λέων':     { en: 'lion',                    emoji: '🦁' },
+        'καρχαρίας':{ en: 'shark',                   emoji: '🦈' },
+        'σελήνη':   { en: 'moon',                    emoji: '🌙' },
+        'ἄστρον':   { en: 'star',                    emoji: '⭐' },
+        'ἄνθος':    { en: 'flower',                  emoji: '🌸' },
+        'πῦρ':      { en: 'fire',                    emoji: '🔥' },
+        'ὕδωρ':     { en: 'water',                   emoji: '💧' },
+        'βιβλίον':  { en: 'book, scroll',            emoji: '📜' },
+        'νόμισμα':  { en: 'coin, money',             emoji: '🪙💰' },
+        'νῆσος':    { en: 'island',                  emoji: '🏝️' },
+        'ὁδός':     { en: 'road, path, way',         emoji: '👣🛤️' },
+        'γῆ':       { en: 'earth, ground, land',     emoji: '🟫' },
+        'κλίνη':    { en: 'couch, bed',              emoji: '🛏️' }
+      };
+
+      const SENTENCES = [
+        'Ἀπόλλων θεός ἐστιν',
+        'Ζεύς θεός ἐστιν',
+        'Ἥφαιστος θεός ἐστιν',
+        'Ἑρμῆς θεός ἐστιν',
+        'Ἀθηνᾶ θεά ἐστιν',
+        'ἀνήρ καλός ἐστιν',
+        'γυνή καλή ἐστιν',
+        'ἵππος καλός ἐστιν',
+        'λέων κακός ἐστιν',
+        'οἷκος καλός ἐστιν',
+        'ναός καλός ἐστιν',
+        'σελήνη καλή ἐστιν',
+        'ἄστρον καλόν ἐστιν',
+        'ἄνθος καλόν ἐστιν',
+        'πῦρ κακόν ἐστιν',
+        'ὕδωρ καλόν ἐστιν',
+        'βιβλίον καλόν ἐστιν',
+        'νῆσος καλή ἐστιν',
+        'παιδίον καλόν ἐστιν',
+        'λέων κακός οὐκ ἐστιν',
+        'καρχαρίας κακός ἐστιν',
+        'γέρων καλός ἐστιν'
+      ];
+
+      const EASY_QUIZ_THRESHOLD = 5;   // quiz every sentence for first N
+      const PAIR_QUIZ_SECOND_CHANCE = 0.5;  // after threshold, chance to pick word from earlier sentence
+      const HANGMAN_EVERY  = 4;        // every Nth quiz is a hangman
+      const HANGMAN_LIVES  = 6;
+      const GREEK_ALPHABET = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'];
+
+      const GREEK_LETTERS = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'];
+
+      const scroll        = document.getElementById('scroll');
+      const nextLetterEl  = document.getElementById('next-letter');
+      const quill         = document.getElementById('quill');
+      const quillArea     = document.getElementById('quill-area');
+      const lettersEl     = document.getElementById('letters');
+      const wordsEl       = document.getElementById('words');
+      const passedEl      = document.getElementById('passed');
+      const timerBar      = document.getElementById('timer-bar');
+      const timerFill     = document.getElementById('timer-fill');
+      const hint          = document.getElementById('hint');
+
+      const COMPREHENSION_MS = 5000;
+      const SHORT_PAUSE_MS   = 700;
+
+      let currentSentenceWords  = [];
+      let currentWordIndex      = 0;
+      let currentWordStr        = '';
+      let currentWordInfo       = null;
+      let letterIndex           = 0;
+      let currentWordEl         = null;
+      let currentSentenceBlock  = null;
+      let sentenceQueue         = [];
+      let lettersCount          = 0;
+      let wordsCount            = 0;
+      let sentencesDone         = 0;
+      let previousSentenceWords = null;
+      let inQuiz                = false;
+      let quizTarget            = '';
+      let quizProgress          = '';
+      let quizPassed            = 0;
+      let quizAttempts          = 0;
+      let completedSentences    = [];
+      let hangmanLives          = HANGMAN_LIVES;
+      let hangmanSentence       = '';
+
+      function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+      function startNextSentence() {
+        if (sentenceQueue.length === 0) sentenceQueue = shuffle(SENTENCES);
+        const sentence = sentenceQueue.shift();
+        currentSentenceWords = sentence.split(' ');
+        currentWordIndex = 0;
+
+        currentSentenceBlock = document.createElement('div');
+        currentSentenceBlock.className = 'sentence';
+        scroll.appendChild(currentSentenceBlock);
+        scroll.scrollTop = scroll.scrollHeight;
+        startNextWord();
+      }
+
+      function startNextWord() {
+        if (currentWordIndex >= currentSentenceWords.length) {
+          onSentenceComplete();
+          return;
+        }
+
+        if (currentWordIndex > 0) {
+          currentSentenceBlock.appendChild(document.createTextNode(' '));
+        }
+
+        currentWordStr = currentSentenceWords[currentWordIndex];
+        currentWordInfo = WORDS[currentWordStr] || { en: '', emoji: null };
+        letterIndex = 0;
+
+        currentWordEl = document.createElement('span');
+        currentWordEl.className = 'word current';
+        currentSentenceBlock.appendChild(currentWordEl);
+
+        nextLetterEl.textContent = currentWordStr[0];
+        quill.disabled = false;
+        scroll.scrollTop = scroll.scrollHeight;
+      }
+
+      function stampLetter() {
+        if (inQuiz || !currentWordStr || quill.disabled) return;
+        const letter = currentWordStr[letterIndex];
+        currentWordEl.textContent += letter;
+        letterIndex++;
+        lettersCount++;
+        lettersEl.textContent = lettersCount;
+        scroll.scrollTop = scroll.scrollHeight;
+
+        if (letterIndex < currentWordStr.length) {
+          nextLetterEl.textContent = currentWordStr[letterIndex];
+        } else {
+          nextLetterEl.textContent = '·';
+          onWordComplete();
+        }
+      }
+
+      function onWordComplete() {
+        wordsCount++;
+        wordsEl.textContent = wordsCount;
+        currentWordEl.classList.remove('current');
+        currentWordEl.classList.add('completed');
+        currentWordEl.title = currentWordInfo.en || '';
+
+        const emoji = currentWordInfo.emoji;
+        let pauseMs = SHORT_PAUSE_MS;
+
+        if (emoji) {
+          const meaning = document.createElement('span');
+          meaning.className = 'meaning';
+          meaning.textContent = emoji;
+          currentWordEl.appendChild(meaning);
+          requestAnimationFrame(() => meaning.classList.add('show'));
+
+          pauseMs = COMPREHENSION_MS;
+          timerBar.classList.add('show');
+          timerFill.style.transition = 'none';
+          timerFill.style.transform = 'scaleX(1)';
+          requestAnimationFrame(() => {
+            timerFill.style.transition = `transform ${COMPREHENSION_MS}ms linear`;
+            timerFill.style.transform = 'scaleX(0)';
+          });
+        }
+
+        quill.disabled = true;
+        nextLetterEl.textContent = '·';
+
+        setTimeout(() => {
+          timerBar.classList.remove('show');
+          const meaning = currentWordEl.querySelector('.meaning');
+          if (meaning) {
+            meaning.classList.remove('show');
+            setTimeout(() => meaning.remove(), 300);
+          }
+          currentWordIndex++;
+          startNextWord();
+        }, pauseMs);
+      }
+
+      function onSentenceComplete() {
+        sentencesDone++;
+        completedSentences.push(currentSentenceWords.join(' '));
+        if (completedSentences.length > 20) completedSentences.shift();
+
+        // Easy mode: quiz every sentence for the first N
+        if (sentencesDone <= EASY_QUIZ_THRESHOLD) {
+          const candidates = currentSentenceWords.filter(w => WORDS[w] && WORDS[w].emoji);
+          if (candidates.length === 0) {
+            previousSentenceWords = currentSentenceWords;
+            setTimeout(startNextSentence, 500);
+            return;
+          }
+          quizTarget = pick(candidates);
+          setTimeout(() => chooseQuizMode(quizTarget), 600);
+          return;
+        }
+
+        // Hard mode: quiz every 2 sentences, picking from either
+        if (previousSentenceWords === null) {
+          // first sentence of the pair — bank it, write another
+          previousSentenceWords = currentSentenceWords;
+          setTimeout(startNextSentence, 500);
+          return;
+        }
+
+        // second sentence of the pair — pick a content word from either
+        const useEarlier = Math.random() < PAIR_QUIZ_SECOND_CHANCE;
+        const pool = useEarlier ? previousSentenceWords : currentSentenceWords;
+        const fallback = useEarlier ? currentSentenceWords : previousSentenceWords;
+        let candidates = pool.filter(w => WORDS[w] && WORDS[w].emoji);
+        if (candidates.length === 0) candidates = fallback.filter(w => WORDS[w] && WORDS[w].emoji);
+        previousSentenceWords = null;
+
+        if (candidates.length === 0) {
+          setTimeout(startNextSentence, 500);
+          return;
+        }
+        quizTarget = pick(candidates);
+        setTimeout(() => chooseQuizMode(quizTarget), 600);
+      }
+
+      function chooseQuizMode(target) {
+        quizAttempts++;
+        if (quizAttempts % HANGMAN_EVERY === 0 && completedSentences.length > 0) {
+          startHangman();
+        } else {
+          startQuiz(target);
+        }
+      }
+
+      function startQuiz(target) {
+        inQuiz = true;
+        quizProgress = '';
+        const info = WORDS[target];
+
+        scroll.innerHTML = '';
+        const quiz = document.createElement('div');
+        quiz.className = 'quiz';
+
+        const skipBtn = document.createElement('button');
+        skipBtn.className = 'quiz-skip';
+        skipBtn.type = 'button';
+        skipBtn.textContent = 'skip ⏭';
+        skipBtn.addEventListener('click', () => onQuizSkip(target));
+
+        const lbl = document.createElement('div');
+        lbl.className = 'quiz-label';
+        lbl.textContent = 'spell this word';
+
+        const emojiEl = document.createElement('div');
+        emojiEl.className = 'quiz-emoji';
+        emojiEl.textContent = info.emoji;
+
+        const progressEl = document.createElement('div');
+        progressEl.className = 'quiz-progress';
+        progressEl.id = 'quiz-progress';
+        progressEl.textContent = '';
+
+        const pool = document.createElement('div');
+        pool.className = 'quiz-letters';
+
+        const targetLetters = Array.from(target);
+        const decoys = pickDecoys(targetLetters, 5);
+        const allLetters = shuffle([...targetLetters, ...decoys]);
+
+        allLetters.forEach((letter, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'quiz-letter';
+          btn.type = 'button';
+          btn.textContent = letter;
+          btn.dataset.letter = letter;
+          btn.addEventListener('click', () => onQuizLetterClick(btn, letter, target));
+          pool.appendChild(btn);
+        });
+
+        quiz.append(skipBtn, lbl, emojiEl, progressEl, pool);
+        scroll.appendChild(quiz);
+
+        quillArea.style.display = 'none';
+        hint.textContent = 'Click letters to spell the word · Wrong letters bounce back · skip if stuck';
+      }
+
+      function onQuizSkip(target) {
+        const progressEl = document.getElementById('quiz-progress');
+        if (progressEl) {
+          progressEl.textContent = target;
+          progressEl.classList.add('done', 'skipped');
+        }
+        setTimeout(() => {
+          inQuiz = false;
+          quillArea.style.display = '';
+          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          startNextSentence();
+        }, 1100);
+      }
+
+      function pickDecoys(targetLetters, n) {
+        const targetBare = new Set(targetLetters.map(stripDiacritics));
+        const pool = GREEK_LETTERS.filter(l => !targetBare.has(l));
+        return shuffle(pool).slice(0, n);
+      }
+
+      function stripDiacritics(s) {
+        return s.normalize('NFD')
+          .replace(/[̀-ͯ]/g, '')
+          .toLowerCase()
+          .replace(/ς/g, 'σ');
+      }
+
+      function onQuizLetterClick(btn, letter, target) {
+        if (btn.disabled) return;
+        const expected = Array.from(target)[quizProgress.length];
+        if (letter === expected) {
+          quizProgress += letter;
+          btn.classList.add('used');
+          btn.disabled = true;
+          const progressEl = document.getElementById('quiz-progress');
+          progressEl.textContent = quizProgress;
+          if (quizProgress === target) {
+            progressEl.classList.add('done', 'success');
+            onQuizComplete();
+          }
+        } else {
+          btn.classList.remove('shaking');
+          void btn.offsetWidth;
+          btn.classList.add('shaking');
+          setTimeout(() => btn.classList.remove('shaking'), 420);
+        }
+      }
+
+      function onQuizComplete() {
+        quizPassed++;
+        passedEl.textContent = quizPassed;
+        setTimeout(() => {
+          inQuiz = false;
+          quillArea.style.display = '';
+          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          startNextSentence();
+        }, 1400);
+      }
+
+      // ===== Hangman / ΑΙΝΙΓΜΑ =====
+
+      function startHangman() {
+        inQuiz = true;
+        hangmanLives = HANGMAN_LIVES;
+
+        // pick a previously-seen sentence (prefer not the most recent)
+        let pool = completedSentences;
+        if (pool.length > 1) pool = pool.slice(0, -1);
+        hangmanSentence = pick(pool);
+
+        scroll.innerHTML = '';
+
+        const quiz = document.createElement('div');
+        quiz.className = 'quiz hangman';
+
+        const skipBtn = document.createElement('button');
+        skipBtn.className = 'quiz-skip';
+        skipBtn.type = 'button';
+        skipBtn.textContent = 'skip ⏭';
+        skipBtn.addEventListener('click', onHangmanSkip);
+
+        const lbl = document.createElement('div');
+        lbl.className = 'quiz-label';
+        lbl.textContent = 'ΑΙΝΙΓΜΑ';
+
+        const lives = document.createElement('div');
+        lives.className = 'hangman-lives';
+        lives.id = 'hangman-lives';
+        for (let i = 0; i < HANGMAN_LIVES; i++) {
+          const span = document.createElement('span');
+          span.className = 'life';
+          span.textContent = '🏛️';
+          lives.appendChild(span);
+        }
+
+        const sent = document.createElement('div');
+        sent.className = 'hangman-sentence';
+        sent.id = 'hangman-sentence';
+
+        hangmanSentence.split(' ').forEach(word => {
+          const wordSpan = document.createElement('span');
+          wordSpan.className = 'hg-word';
+
+          const info = WORDS[word];
+          if (info && info.emoji) {
+            const em = document.createElement('span');
+            em.className = 'hg-emoji';
+            em.textContent = info.emoji;
+            wordSpan.appendChild(em);
+          }
+
+          Array.from(word).forEach(letter => {
+            const charSpan = document.createElement('span');
+            charSpan.className = 'hg-char hidden';
+            charSpan.dataset.letter = letter;
+            charSpan.textContent = letter;
+            wordSpan.appendChild(charSpan);
+          });
+
+          sent.appendChild(wordSpan);
+        });
+
+        const keyboard = document.createElement('div');
+        keyboard.className = 'hangman-keyboard';
+        GREEK_ALPHABET.forEach(letter => {
+          const btn = document.createElement('button');
+          btn.className = 'hg-key';
+          btn.type = 'button';
+          btn.textContent = letter;
+          btn.dataset.letter = letter;
+          btn.addEventListener('click', () => onHangmanLetterClick(btn, letter));
+          keyboard.appendChild(btn);
+        });
+
+        quiz.append(skipBtn, lbl, lives, sent, keyboard);
+        scroll.appendChild(quiz);
+
+        quillArea.style.display = 'none';
+        hint.textContent = 'ΑΙΝΙΓΜΑ — guess letters · 🏛️ columns are your lives · click skip if stuck';
+      }
+
+      function onHangmanLetterClick(btn, letter) {
+        if (btn.disabled || btn.classList.contains('used')) return;
+
+        const chars = document.querySelectorAll('#hangman-sentence .hg-char.hidden');
+        let matched = 0;
+        chars.forEach(charEl => {
+          if (stripDiacritics(charEl.dataset.letter) === letter) {
+            charEl.classList.remove('hidden');
+            charEl.classList.add('revealed');
+            matched++;
+          }
+        });
+
+        btn.classList.add('used');
+        if (matched > 0) {
+          btn.classList.add('hit');
+          const stillHidden = document.querySelectorAll('#hangman-sentence .hg-char.hidden');
+          if (stillHidden.length === 0) onHangmanWin();
+        } else {
+          btn.classList.add('miss');
+          hangmanLives--;
+          const lives = document.querySelectorAll('#hangman-lives .life');
+          if (lives[hangmanLives]) {
+            lives[hangmanLives].classList.add('lost');
+            lives[hangmanLives].textContent = '🪨';
+          }
+          if (hangmanLives <= 0) onHangmanLose();
+        }
+      }
+
+      function exitHangman(delay) {
+        document.querySelectorAll('.hg-key').forEach(k => k.disabled = true);
+        setTimeout(() => {
+          inQuiz = false;
+          quillArea.style.display = '';
+          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          startNextSentence();
+        }, delay);
+      }
+
+      function onHangmanWin() {
+        quizPassed++;
+        passedEl.textContent = quizPassed;
+        exitHangman(1800);
+      }
+
+      function onHangmanLose() {
+        document.querySelectorAll('#hangman-sentence .hg-char.hidden').forEach(c => {
+          c.classList.remove('hidden');
+          c.classList.add('skipped');
+        });
+        exitHangman(2400);
+      }
+
+      function onHangmanSkip() {
+        document.querySelectorAll('#hangman-sentence .hg-char.hidden').forEach(c => {
+          c.classList.remove('hidden');
+          c.classList.add('skipped');
+        });
+        exitHangman(1200);
+      }
+
+      quill.addEventListener('click', stampLetter);
+      startNextSentence();
+    })();
+  </script>
+
+</body>
+</html>
