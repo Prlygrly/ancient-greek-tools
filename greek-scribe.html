@@ -215,40 +215,32 @@
       100% { opacity: 1; transform: scale(1); }
     }
     .quiz-progress {
-      font-size: 2.4rem;
-      letter-spacing: 0.04em;
+      display: flex;
+      gap: 0.45rem;
+      justify-content: center;
       min-height: 3.2rem;
-      color: var(--ink);
-      padding: 0.2rem 0.8rem;
-      border-bottom: 2px dashed var(--ink-light);
-      min-width: 6rem;
-      text-align: center;
+      padding: 0.2rem;
     }
-    .quiz-progress::after {
-      content: '';
+    .progress-slot {
       display: inline-block;
-      width: 0.5em;
-      height: 1em;
-      vertical-align: text-bottom;
-      background: var(--ink);
-      margin-left: 0.05em;
-      animation: blink 1s steps(2) infinite;
+      min-width: 1em;
+      font-size: 2.4rem;
+      text-align: center;
+      border-bottom: 2px solid var(--ink);
+      color: var(--ink);
+      padding: 0 0.1em;
+      transition: color 200ms;
     }
-    .quiz-progress.done::after { display: none; }
-    .quiz-progress.success {
+    .progress-slot.empty   { color: transparent; }
+    .progress-slot.filled  { animation: revealLetter 350ms ease-out; }
+    .progress-slot.skipped { color: var(--ink-light); opacity: 0.75; font-style: italic; }
+    .quiz-progress.success .progress-slot {
       color: #2d6a3a;
       animation: pulse 0.5s ease-out;
     }
-    .quiz-progress.skipped {
-      color: var(--ink-light);
-      opacity: 0.7;
-      font-style: italic;
-    }
 
     .quiz-skip {
-      position: absolute;
-      top: 1rem;
-      right: 1.2rem;
+      align-self: flex-end;
       background: rgba(60, 30, 10, 0.08);
       border: 1px solid var(--ink-light);
       color: var(--ink-light);
@@ -258,6 +250,7 @@
       font-size: 0.9rem;
       cursor: pointer;
       transition: background 200ms, color 200ms;
+      margin-bottom: -0.5rem;
     }
     .quiz-skip:hover { background: rgba(60, 30, 10, 0.2); color: var(--ink); }
     .quiz {
@@ -389,15 +382,44 @@
       60% { transform: translateX(-5px); }
       80% { transform: translateX(5px); }
     }
-    .home-link{position:fixed;top:1rem;left:1rem;z-index:100;font-size:0.82rem;font-family:inherit;color:var(--gold);text-decoration:none;letter-spacing:.08em;opacity:.55;transition:opacity .2s}
-    .home-link:hover{opacity:1}
+    .home-link {
+      font-size: 0.85rem;
+      font-family: inherit;
+      color: var(--gold);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      opacity: 0.65;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .home-link:hover { opacity: 1; }
+
+    .word-tooltip {
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: rgba(35, 22, 8, 0.96);
+      color: var(--parchment);
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.4rem;
+      font-size: 0.95rem;
+      pointer-events: none;
+      z-index: 250;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translate(-50%, -110%);
+      transition: opacity 150ms ease-out;
+      border: 1px solid var(--gold);
+      box-shadow: 0 0.3rem 0.7rem rgba(0,0,0,0.55);
+      font-family: 'Gentium Plus', 'Cardo', 'Palatino Linotype', Georgia, serif;
+    }
+    .word-tooltip.show { opacity: 1; }
   </style>
 </head>
 <body>
 
-<a class="home-link" href="index.html">&#8592; Home</a>
-
   <div class="ui">
+    <a class="home-link" href="index.html">&#8592; Home</a>
     <div class="title">ΓΡΑΦΕΥΣ</div>
     <div class="counters">
       <div class="counter">γράμματα <span class="counter-value" id="letters">0</span></div>
@@ -405,6 +427,8 @@
       <div class="counter">✓ <span class="counter-value" id="passed">0</span></div>
     </div>
   </div>
+
+  <div class="word-tooltip" id="word-tooltip"></div>
 
   <div class="scroll" id="scroll"></div>
 
@@ -715,12 +739,19 @@
         const progressEl = document.createElement('div');
         progressEl.className = 'quiz-progress';
         progressEl.id = 'quiz-progress';
-        progressEl.textContent = '';
+
+        const targetLetters = Array.from(target);
+        targetLetters.forEach(letter => {
+          const slot = document.createElement('span');
+          slot.className = 'progress-slot empty';
+          slot.dataset.expected = letter;
+          slot.textContent = letter;
+          progressEl.appendChild(slot);
+        });
 
         const pool = document.createElement('div');
         pool.className = 'quiz-letters';
 
-        const targetLetters = Array.from(target);
         const decoys = pickDecoys(targetLetters, 5);
         const allLetters = shuffle([...targetLetters, ...decoys]);
 
@@ -744,13 +775,16 @@
       function onQuizSkip(target) {
         const progressEl = document.getElementById('quiz-progress');
         if (progressEl) {
-          progressEl.textContent = target;
-          progressEl.classList.add('done', 'skipped');
+          Array.from(progressEl.children).forEach(slot => {
+            slot.classList.remove('empty');
+            slot.classList.add('skipped');
+          });
         }
         setTimeout(() => {
           inQuiz = false;
           quillArea.style.display = '';
           hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          scroll.innerHTML = '';
           startNextSentence();
         }, 1100);
       }
@@ -772,13 +806,17 @@
         if (btn.disabled) return;
         const expected = Array.from(target)[quizProgress.length];
         if (letter === expected) {
+          const progressEl = document.getElementById('quiz-progress');
+          const slot = progressEl.children[quizProgress.length];
+          if (slot) {
+            slot.classList.remove('empty');
+            slot.classList.add('filled');
+          }
           quizProgress += letter;
           btn.classList.add('used');
           btn.disabled = true;
-          const progressEl = document.getElementById('quiz-progress');
-          progressEl.textContent = quizProgress;
           if (quizProgress === target) {
-            progressEl.classList.add('done', 'success');
+            progressEl.classList.add('success');
             onQuizComplete();
           }
         } else {
@@ -796,6 +834,7 @@
           inQuiz = false;
           quillArea.style.display = '';
           hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          scroll.innerHTML = '';
           startNextSentence();
         }, 1400);
       }
@@ -918,6 +957,7 @@
           inQuiz = false;
           quillArea.style.display = '';
           hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          scroll.innerHTML = '';
           startNextSentence();
         }, delay);
       }
@@ -945,6 +985,30 @@
       }
 
       quill.addEventListener('click', stampLetter);
+
+      // Tap/click on completed words shows English meaning (mobile-friendly tooltip)
+      const wordTip = document.getElementById('word-tooltip');
+      let wordTipTimer = null;
+      function showWordTip(wordEl) {
+        const en = wordEl.title;
+        if (!en) return;
+        wordTip.textContent = en;
+        const rect = wordEl.getBoundingClientRect();
+        wordTip.style.left = (rect.left + rect.width / 2) + 'px';
+        wordTip.style.top  = (rect.top - 6) + 'px';
+        wordTip.classList.add('show');
+        clearTimeout(wordTipTimer);
+        wordTipTimer = setTimeout(() => wordTip.classList.remove('show'), 2500);
+      }
+      scroll.addEventListener('click', (e) => {
+        const w = e.target.closest('.word.completed');
+        if (w) showWordTip(w);
+        else wordTip.classList.remove('show');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.word.completed')) wordTip.classList.remove('show');
+      });
+
       startNextSentence();
     })();
   </script>
