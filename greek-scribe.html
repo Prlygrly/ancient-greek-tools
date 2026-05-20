@@ -114,8 +114,10 @@
       transform: scale(0.4);
       display: inline-block;
       transition: opacity 350ms ease-out, transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
-      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Gentium Plus', 'Cardo', Georgia, serif;
     }
+    /* Slightly smaller + italic when the meaning is plain text rather than emoji */
+    .word .meaning.text { font-size: 1.15rem; font-style: italic; }
     .word .meaning.show { opacity: 1; transform: scale(1); }
     .word.current { color: var(--ink); }
     .word.current::after {
@@ -206,10 +208,12 @@
     .quiz-emoji {
       font-size: 5rem;
       line-height: 1;
-      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Gentium Plus', 'Cardo', Georgia, serif;
       animation: quizPrompt 550ms cubic-bezier(0.34, 1.56, 0.64, 1);
       filter: drop-shadow(2px 3px 2px rgba(0,0,0,0.18));
     }
+    /* Smaller text size for prompts that are plain text rather than emoji */
+    .quiz-emoji.text { font-size: 2.6rem; font-style: italic; letter-spacing: 0.04em; }
     @keyframes quizPrompt {
       0%   { opacity: 0; transform: scale(0.4); }
       100% { opacity: 1; transform: scale(1); }
@@ -300,8 +304,10 @@
       left: 50%;
       transform: translateX(-50%);
       font-size: 1.25rem;
-      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Gentium Plus', 'Cardo', Georgia, serif;
+      white-space: nowrap;
     }
+    .hg-word .hg-emoji.text { font-size: 0.85rem; font-style: italic; }
     .hg-char {
       display: inline-block;
       min-width: 0.75em;
@@ -414,9 +420,163 @@
       font-family: 'Gentium Plus', 'Cardo', 'Palatino Linotype', Georgia, serif;
     }
     .word-tooltip.show { opacity: 1; }
+
+    /* Welcome screen */
+    .welcome-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 14, 8, 0.93);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 1rem;
+    }
+    .welcome-overlay.hidden { display: none; }
+    .welcome-box {
+      background: linear-gradient(180deg, var(--parchment), #e6d29a);
+      color: var(--ink);
+      border-radius: 0.8rem;
+      padding: 2rem 1.8rem;
+      max-width: 460px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 1.5rem 3rem rgba(0,0,0,0.6);
+      border: 2px solid var(--gold);
+    }
+    .welcome-title {
+      font-size: 2.2rem;
+      letter-spacing: 0.2em;
+      color: var(--quill-bg);
+      margin: 0 0 0.6rem;
+    }
+    .welcome-text { font-size: 1.05rem; margin: 0.3rem 0; }
+    .welcome-sub  { font-size: 0.85rem; opacity: 0.7; margin: 0.5rem 0 1.4rem; }
+    .welcome-choices { display: flex; flex-direction: column; gap: 0.8rem; }
+    .welcome-btn {
+      background: var(--quill-bg);
+      color: var(--parchment);
+      border: 2px solid var(--gold);
+      border-radius: 0.5rem;
+      padding: 0.9rem 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: transform 80ms ease, background 200ms;
+    }
+    .welcome-btn:hover  { background: var(--quill-edge); transform: translateY(-2px); }
+    .welcome-btn:active { transform: scale(0.98); }
+    .welcome-btn-title  { font-size: 1.5rem; letter-spacing: 0.15em; color: var(--gold); }
+    .welcome-btn-desc   { font-size: 0.85rem; opacity: 0.85; }
+
+    /* Settings */
+    .settings-btn {
+      background: rgba(0,0,0,0.35);
+      border: none;
+      color: var(--gold);
+      font-size: 1.1rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: 0.4rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 200ms;
+    }
+    .settings-btn:hover { background: rgba(0,0,0,0.55); }
+
+    .settings-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 14, 8, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 400;
+      padding: 1rem;
+    }
+    .settings-overlay.hidden { display: none; }
+    .settings-box {
+      background: linear-gradient(180deg, var(--parchment), #e6d29a);
+      color: var(--ink);
+      border-radius: 0.8rem;
+      padding: 1.6rem;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 1.5rem 3rem rgba(0,0,0,0.6);
+      border: 2px solid var(--gold);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .settings-title {
+      margin: 0 0 1rem;
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      color: var(--quill-bg);
+      text-align: center;
+    }
+    .settings-packs { display: flex; flex-direction: column; gap: 0.7rem; }
+    .settings-divider { border: none; border-top: 1px solid rgba(74,46,21,0.25); margin: 1rem 0; }
+    .settings-pack {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.7rem;
+      background: rgba(120, 80, 40, 0.12);
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+    .settings-pack input { margin-top: 0.2rem; transform: scale(1.3); cursor: pointer; }
+    .settings-pack-info { display: flex; flex-direction: column; gap: 0.15rem; }
+    .settings-pack-name { font-weight: bold; font-size: 1.05rem; }
+    .settings-pack-desc { font-size: 0.82rem; opacity: 0.75; }
+    .settings-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      margin-top: 1.3rem;
+    }
+    .settings-actions button {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 0.45rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 80ms ease;
+    }
+    .settings-actions button:active { transform: scale(0.97); }
+    .settings-reset {
+      background: transparent;
+      color: var(--ink);
+      border: 2px solid var(--ink-light);
+    }
+    .settings-close {
+      background: var(--quill-bg);
+      color: var(--parchment);
+      border: 2px solid var(--gold);
+    }
   </style>
 </head>
 <body>
+
+  <div class="welcome-overlay" id="welcome-overlay">
+    <div class="welcome-box">
+      <h1 class="welcome-title">ΓΡΑΦΕΥΣ</h1>
+      <p class="welcome-text">Read and spell Greek, one sentence at a time.</p>
+      <p class="welcome-sub">Pick a starting style — you can change content packs anytime with the ⚙ settings button.</p>
+      <div class="welcome-choices">
+        <button class="welcome-btn" data-dialect="attic" type="button">
+          <span class="welcome-btn-title">ΑΤΤΙΚΗ</span>
+          <span class="welcome-btn-desc">Classical Attic — everyday words &amp; the Greek gods</span>
+        </button>
+        <button class="welcome-btn" data-dialect="koine" type="button">
+          <span class="welcome-btn-title">ΚΟΙΝΗ</span>
+          <span class="welcome-btn-desc">Koine — New Testament / biblical Greek</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div class="ui">
     <a class="home-link" href="index.html">&#8592; Home</a>
@@ -425,12 +585,32 @@
       <div class="counter">γράμματα <span class="counter-value" id="letters">0</span></div>
       <div class="counter">λέξεις   <span class="counter-value" id="words">0</span></div>
       <div class="counter">✓ <span class="counter-value" id="passed">0</span></div>
+      <button class="settings-btn" id="settings-btn" type="button" aria-label="settings">⚙</button>
+    </div>
+  </div>
+
+  <div class="settings-overlay hidden" id="settings-overlay">
+    <div class="settings-box">
+      <h2 class="settings-title">Content Packs</h2>
+      <div class="settings-packs" id="settings-packs"></div>
+      <hr class="settings-divider" />
+      <label class="settings-pack">
+        <input type="checkbox" id="quiz-only-toggle">
+        <div class="settings-pack-info">
+          <span class="settings-pack-name">Quiz-only mode</span>
+          <span class="settings-pack-desc">Skip writing — just spelling quizzes &amp; ΑΙΝΙΓΜΑ, drawn at random from your packs</span>
+        </div>
+      </label>
+      <div class="settings-actions">
+        <button class="settings-reset" id="settings-reset" type="button">Start over</button>
+        <button class="settings-close" id="settings-close" type="button">Done</button>
+      </div>
     </div>
   </div>
 
   <div class="word-tooltip" id="word-tooltip"></div>
 
-  <div class="scroll" id="scroll"></div>
+  <div class="scroll" id="scroll"><div class="sentences" id="sentences"></div></div>
 
   <div class="quill-area" id="quill-area">
     <div class="timer-bar" id="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
@@ -443,75 +623,221 @@
 
   <script>
     (function () {
-      const WORDS = {
-        // gods (dual-emoji: attribute + symbol)
-        'Ἀπόλλων':  { en: 'Apollo',                  emoji: '🏹☀️' },
-        'Ἀθηνᾶ':   { en: 'Athena',                  emoji: '🦉🛡️' },
-        'Ζεύς':     { en: 'Zeus',                    emoji: '⚡👑' },
-        'Ἥφαιστος': { en: 'Hephaestus',              emoji: '⚒️🔥' },
-        'Ἑρμῆς':    { en: 'Hermes',                  emoji: '🪶⚕️' },
-        // function / abstract (no quiz emoji)
-        'ἐστιν':    { en: 'is',                      emoji: null },
-        'ἐστι':     { en: 'is',                      emoji: null },
-        'οὐκ':      { en: 'not',                     emoji: '🚫' },
-        'θεός':     { en: 'god',                     emoji: null },
-        'θεά':      { en: 'goddess',                 emoji: null },
-        // adjectives (gender-agreeing forms)
-        'καλός':    { en: 'good, beautiful (m.)',    emoji: '👍' },
-        'καλή':     { en: 'good, beautiful (f.)',    emoji: '👍' },
-        'καλόν':    { en: 'good, beautiful (n.)',    emoji: '👍' },
-        'κακός':    { en: 'bad (m.)',                emoji: '👎' },
-        'κακή':     { en: 'bad (f.)',                emoji: '👎' },
-        'κακόν':    { en: 'bad (n.)',                emoji: '👎' },
-        // nouns
-        'ἄνθρωπος': { en: 'person, human',           emoji: '🧑' },
-        'ἀνήρ':     { en: 'man',                     emoji: '👨' },
-        'γυνή':     { en: 'woman',                   emoji: '👩' },
-        'γέρων':    { en: 'old man',                 emoji: '👴' },
-        'παιδίον':  { en: 'little child',            emoji: '👶' },
-        'οἷκος':    { en: 'house',                   emoji: '🏠' },
-        'ναός':     { en: 'temple',                  emoji: '🏛️' },
-        'λίθος':    { en: 'stone',                   emoji: '🪨' },
-        'ἵππος':    { en: 'horse',                   emoji: '🐎' },
-        'λέων':     { en: 'lion',                    emoji: '🦁' },
-        'καρχαρίας':{ en: 'shark',                   emoji: '🦈' },
-        'σελήνη':   { en: 'moon',                    emoji: '🌙' },
-        'ἄστρον':   { en: 'star',                    emoji: '⭐' },
-        'ἄνθος':    { en: 'flower',                  emoji: '🌸' },
-        'πῦρ':      { en: 'fire',                    emoji: '🔥' },
-        'ὕδωρ':     { en: 'water',                   emoji: '💧' },
-        'βιβλίον':  { en: 'book, scroll',            emoji: '📜' },
-        'νόμισμα':  { en: 'coin, money',             emoji: '🪙💰' },
-        'νῆσος':    { en: 'island',                  emoji: '🏝️' },
-        'ὁδός':     { en: 'road, path, way',         emoji: '👣🛤️' },
-        'γῆ':       { en: 'earth, ground, land',     emoji: '🟫' },
-        'κλίνη':    { en: 'couch, bed',              emoji: '🛏️' }
+      const PACKS = {
+        'logos-basics': {
+          name: 'Λόγος αʹ — Βασικά',
+          description: 'Basic vocabulary: people, animals, household items, nature',
+          dialect: 'attic',
+          words: {
+            // function / abstract
+            'ἐστιν':    { en: 'is',                      emoji: null },
+            'ἐστι':     { en: 'is',                      emoji: null },
+            'οὐκ':      { en: 'not',                     emoji: '🚫' },
+            // adjectives (gender-agreeing forms)
+            'καλός':    { en: 'good, beautiful (m.)',    emoji: '👍', noQuiz: true },
+            'καλή':     { en: 'good, beautiful (f.)',    emoji: '👍', noQuiz: true },
+            'καλόν':    { en: 'good, beautiful (n.)',    emoji: '👍', noQuiz: true },
+            'κακός':    { en: 'bad (m.)',                emoji: '👎', noQuiz: true },
+            'κακή':     { en: 'bad (f.)',                emoji: '👎', noQuiz: true },
+            'κακόν':    { en: 'bad (n.)',                emoji: '👎', noQuiz: true },
+            // nouns — people
+            'ἄνθρωπος': { en: 'person, human',           emoji: '🧑' },
+            'ἀνήρ':     { en: 'man',                     emoji: '👨' },
+            'γυνή':     { en: 'woman',                   emoji: '👩' },
+            'γέρων':    { en: 'old man',                 emoji: '👴' },
+            'παιδίον':  { en: 'little child',            emoji: '👶' },
+            // nouns — places and things
+            'οἷκος':    { en: 'family, household',       emoji: '👨👩👶' },
+            'οἰκία':    { en: 'house',                   emoji: '🏠' },
+            'ναός':     { en: 'temple',                  emoji: '🏛️' },
+            'νῆσος':    { en: 'island',                  emoji: '🏝️' },
+            'ὁδός':     { en: 'road, path, way',         emoji: '👣🛤️' },
+            'γῆ':       { en: 'earth, ground, land',     emoji: '🟫' },
+            'κλίνη':    { en: 'couch, bed',              emoji: '🛏️' },
+            'βιβλίον':  { en: 'book, scroll',            emoji: '📜' },
+            'νόμισμα':  { en: 'coin, money',             emoji: '🪙💰' },
+            'λίθος':    { en: 'stone',                   emoji: '🪨' },
+            // nouns — animals
+            'ἵππος':    { en: 'horse',                   emoji: '🐎' },
+            'λέων':     { en: 'lion',                    emoji: '🦁' },
+            'καρχαρίας':{ en: 'shark',                   emoji: '🦈' },
+            // nouns — nature
+            'σελήνη':   { en: 'moon',                    emoji: '🌙' },
+            'ἄστρον':   { en: 'star',                    emoji: '⭐' },
+            'ἄνθος':    { en: 'flower',                  emoji: '🌸' },
+            'πῦρ':      { en: 'fire',                    emoji: '🔥' },
+            'ὕδωρ':     { en: 'water',                   emoji: '💧' }
+          },
+          sentences: [
+            'ἀνήρ καλός ἐστιν',
+            'γυνή καλή ἐστιν',
+            'ἵππος καλός ἐστιν',
+            'λέων καλός ἐστιν',
+            'οἷκος καλός ἐστιν',
+            'οἰκία καλή ἐστιν',
+            'ναός καλός ἐστιν',
+            'σελήνη καλή ἐστιν',
+            'ἄστρον καλόν ἐστιν',
+            'ἄνθος καλόν ἐστιν',
+            'πῦρ κακόν ἐστιν',
+            'ὕδωρ καλόν ἐστιν',
+            'βιβλίον καλόν ἐστιν',
+            'νῆσος καλή ἐστιν',
+            'παιδίον καλόν ἐστιν',
+            'λέων κακός οὐκ ἐστιν',
+            'καρχαρίας κακός ἐστιν',
+            'γέρων καλός ἐστιν'
+          ]
+        },
+
+        'greek-gods': {
+          name: 'Ἕλληνες θεοί',
+          description: 'Greek gods: Apollo, Athena, Zeus, Hephaestus, Hermes',
+          dialect: 'attic',
+          words: {
+            'Ἀπόλλων':  { en: 'Apollo',     emoji: '🏹☀️' },
+            'Ἀθηνᾶ':   { en: 'Athena',     emoji: '🦉🛡️' },
+            'Ζεύς':     { en: 'Zeus',       emoji: '⚡' },
+            'Ἥφαιστος': { en: 'Hephaestus', emoji: '⚒️🔥' },
+            'Ἑρμῆς':    { en: 'Hermes',     emoji: '🪶⚕️' },
+            'θεός':     { en: 'a god',      emoji: 'a god' },
+            'θεά':      { en: 'a goddess',  emoji: 'a goddess' }
+          },
+          sentences: [
+            'Ἀπόλλων θεός ἐστιν',
+            'Ζεύς θεός ἐστιν',
+            'Ἥφαιστος θεός ἐστιν',
+            'Ἑρμῆς θεός ἐστιν',
+            'Ἀθηνᾶ θεά ἐστιν'
+          ]
+        },
+
+        'koine-foundations': {
+          name: 'Κοινή αʹ',
+          description: 'Koine starter: high-frequency NT vocabulary and biblical phrases',
+          dialect: 'koine',
+          words: {
+            // articles
+            'ὁ':       { en: 'the (m.)',           emoji: null },
+            'ἡ':       { en: 'the (f.)',           emoji: null },
+            'τό':      { en: 'the (n.)',           emoji: null },
+            'τοῦ':     { en: 'of the (m./n.)',     emoji: null },
+            'τῷ':      { en: 'to/in the (m./n.)',  emoji: null },
+            'τὸν':     { en: 'the (m. acc.)',      emoji: null },
+            // conjunctions / particles / prepositions
+            'καί':     { en: 'and, also',          emoji: null },
+            'καὶ':     { en: 'and, also',          emoji: null },
+            'δέ':      { en: 'but, and',           emoji: null },
+            'οὐ':      { en: 'not',                emoji: '🚫' },
+            'οὐκ':     { en: 'not',                emoji: '🚫' },
+            'οὐχ':     { en: 'not',                emoji: '🚫' },
+            'ἐν':      { en: 'in',                 emoji: null },
+            'εἰς':     { en: 'into, to',           emoji: null },
+            'πρός':    { en: 'to, toward, with',   emoji: null },
+            // pronouns
+            'ἐγώ':     { en: 'I',                  emoji: '👤' },
+            'ἐγὼ':     { en: 'I',                  emoji: '👤' },
+            // being / function
+            'ἐστιν':   { en: 'is',                 emoji: null },
+            'ἐστι':    { en: 'is',                 emoji: null },
+            'ἦν':      { en: 'was',                emoji: null },
+            // nouns + inflected forms
+            'θεός':    { en: 'God',                emoji: 'God' },
+            'θεὸς':    { en: 'God',                emoji: 'God' },
+            'θεοῦ':    { en: 'of God',             emoji: 'God' },
+            'κύριος':  { en: 'Lord',               emoji: '👑' },
+            'κυρίου':  { en: 'of the Lord',        emoji: '👑' },
+            'λόγος':   { en: 'word',               emoji: '💬' },
+            'λόγον':   { en: 'word (acc.)',        emoji: '💬' },
+            'ἄνθρωπος':{ en: 'human, man',         emoji: '🧑' },
+            'ἀνθρώπου':{ en: 'of a person',        emoji: '🧑' },
+            'υἱός':    { en: 'son',                emoji: '👨👦⬅️' },
+            'υἱὸς':    { en: 'son',                emoji: '👨👦⬅️' },
+            'ἀδελφός': { en: 'brother',            emoji: '👬' },
+            'ἀδελφὸς': { en: 'brother',            emoji: '👬' },
+            'ἀδελφοὶ': { en: 'brothers',           emoji: '👬' },
+            'ἀδελφῷ':  { en: 'to/for the brother', emoji: '👬' },
+            'ἄγγελος': { en: 'angel, messenger',   emoji: '👼' },
+            'ἀπόστολος':{ en: 'apostle',           emoji: '📣' },
+            'κόσμος':  { en: 'world',              emoji: '🌍' },
+            'οὐρανός': { en: 'heaven',             emoji: '☁️✨' },
+            'οὐρανῷ':  { en: 'in heaven',          emoji: '☁️✨' },
+            'Ἰησοῦς':  { en: 'Jesus',              emoji: '✝️' },
+            'Χριστός': { en: 'Christ, Messiah',    emoji: '🫒👑' },
+            'Χριστὸς': { en: 'Christ, Messiah',    emoji: '🫒👑' },
+            'Χριστῷ':  { en: 'in Christ',          emoji: '🫒👑' },
+            'Χριστόν': { en: 'Christ (acc.)',      emoji: '🫒👑' },
+            'ἀγάπη':   { en: 'love',               emoji: '❤️' },
+            'ζωή':     { en: 'life',               emoji: '🌱' },
+            'ζωήν':    { en: 'life (acc.)',        emoji: '🌱' },
+            'ἀρχή':    { en: 'beginning',          emoji: '🌅' },
+            'ἀρχῇ':    { en: 'beginning (dat.)',   emoji: '🌅' },
+            // verbs
+            'λέγω':    { en: 'I say, speak',       emoji: '🗣️' },
+            'ἀκούω':   { en: 'I hear',             emoji: '👂' },
+            'ἀκούει':  { en: 'he/she hears',       emoji: '👂' },
+            'πιστεύω': { en: 'I believe',          emoji: '🙏' },
+            'ἔχω':     { en: 'I have',             emoji: '🤲🪙' },
+            // adjectives
+            'ἀγαθός':  { en: 'good',               emoji: '👍' },
+            'ἅγιος':   { en: 'holy',               emoji: '😇' },
+            'ἁγία':    { en: 'holy (f.)',          emoji: '😇' },
+            'ἅγιον':   { en: 'holy (n.)',          emoji: '😇' }
+          },
+          sentences: [
+            'ἐν ἀρχῇ ἦν ὁ λόγος',
+            'ὁ θεὸς ἀγάπη',
+            'ὁ θεὸς ἀγαθός',
+            'ἅγιος ὁ θεός',
+            'Ἰησοῦς Χριστός υἱὸς θεοῦ',
+            'Ἰησοῦς ἐστιν ὁ υἱὸς τοῦ ἀνθρώπου',
+            'ὁ ἄγγελος κυρίου ἅγιος',
+            'ὁ ἀδελφὸς ἐν Χριστῷ',
+            'ὁ κύριος ἐν οὐρανῷ',
+            'ἀκούω τὸν λόγον',
+            'πιστεύω εἰς Χριστόν',
+            'ἔχω ζωήν',
+            'λέγω τῷ ἀδελφῷ',
+            'ἐγὼ ἀκούω καὶ ὁ ἀδελφὸς ἀκούει',
+            'οὐκ ἀκούω'
+          ]
+        }
       };
 
-      const SENTENCES = [
-        'Ἀπόλλων θεός ἐστιν',
-        'Ζεύς θεός ἐστιν',
-        'Ἥφαιστος θεός ἐστιν',
-        'Ἑρμῆς θεός ἐστιν',
-        'Ἀθηνᾶ θεά ἐστιν',
-        'ἀνήρ καλός ἐστιν',
-        'γυνή καλή ἐστιν',
-        'ἵππος καλός ἐστιν',
-        'λέων κακός ἐστιν',
-        'οἷκος καλός ἐστιν',
-        'ναός καλός ἐστιν',
-        'σελήνη καλή ἐστιν',
-        'ἄστρον καλόν ἐστιν',
-        'ἄνθος καλόν ἐστιν',
-        'πῦρ κακόν ἐστιν',
-        'ὕδωρ καλόν ἐστιν',
-        'βιβλίον καλόν ἐστιν',
-        'νῆσος καλή ἐστιν',
-        'παιδίον καλόν ἐστιν',
-        'λέων κακός οὐκ ἐστιν',
-        'καρχαρίας κακός ἐστιν',
-        'γέρων καλός ἐστιν'
-      ];
+      // Active pack ids — for Step 1 all packs are active. Step 3 will hook this up to user choice.
+      let activePackIds = ['logos-basics', 'greek-gods', 'koine-foundations'];
+
+      let WORDS = {};
+      let SENTENCES = [];
+
+      function rebuildPool() {
+        WORDS = {};
+        SENTENCES = [];
+        activePackIds.forEach(id => {
+          const pack = PACKS[id];
+          if (!pack) return;
+          Object.assign(WORDS, pack.words);
+          SENTENCES.push(...pack.sentences);
+        });
+      }
+      rebuildPool();
+
+      // Set which packs are active, rebuild the pool, and reset the sentence queue
+      // so the next sentence is drawn from the new selection.
+      function setActivePacks(ids) {
+        const valid = ids.filter(id => PACKS[id]);
+        activePackIds = valid.length ? valid : ['logos-basics'];
+        rebuildPool();
+        sentenceQueue = [];
+      }
+
+      // Console testing hook (until the settings UI lands in Step 3/4):
+      //   scribeSetPacks(['koine-foundations'])      → Koine only
+      //   scribeSetPacks(['logos-basics','greek-gods']) → Attic only
+      //   scribeListPacks()                          → see available pack ids
+      window.scribeSetPacks  = (ids) => { setActivePacks(ids); return activePackIds; };
+      window.scribeListPacks = () => Object.keys(PACKS).map(id =>
+        ({ id, name: PACKS[id].name, sentences: PACKS[id].sentences.length }));
 
       const EASY_QUIZ_THRESHOLD = 5;   // quiz every sentence for first N
       const PAIR_QUIZ_SECOND_CHANCE = 0.5;  // after threshold, chance to pick word from earlier sentence
@@ -522,6 +848,7 @@
       const GREEK_LETTERS = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'];
 
       const scroll        = document.getElementById('scroll');
+      const sentencesEl   = document.getElementById('sentences');
       const nextLetterEl  = document.getElementById('next-letter');
       const quill         = document.getElementById('quill');
       const quillArea     = document.getElementById('quill-area');
@@ -534,6 +861,8 @@
 
       const COMPREHENSION_MS = 5000;
       const SHORT_PAUSE_MS   = 700;
+      const MAX_VISIBLE_SENTENCES = 12;   // parchment keeps this many sentences scrollable
+      const wordSeenCount = {};           // tracks familiarity → shorter timer for common words
 
       let currentSentenceWords  = [];
       let currentWordIndex      = 0;
@@ -552,6 +881,8 @@
       let quizProgress          = '';
       let quizPassed            = 0;
       let quizAttempts          = 0;
+      let quizOnlyMode          = false;
+      let currentDialect        = 'attic';
       let completedSentences    = [];
       let hangmanLives          = HANGMAN_LIVES;
       let hangmanSentence       = '';
@@ -566,6 +897,11 @@
       }
 
       function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+      function isTextLabel(s) { return typeof s === 'string' && /^[a-zA-Z]/.test(s); }
+      function isQuizzable(w) { return WORDS[w] && WORDS[w].emoji && !WORDS[w].noQuiz; }
+      function clearQuizUI() { scroll.querySelectorAll('.quiz').forEach(el => el.remove()); }
+      function showSentences() { sentencesEl.style.display = ''; scroll.scrollTop = scroll.scrollHeight; }
+      function hideSentences() { sentencesEl.style.display = 'none'; }
 
       function startNextSentence() {
         if (sentenceQueue.length === 0) sentenceQueue = shuffle(SENTENCES);
@@ -575,7 +911,10 @@
 
         currentSentenceBlock = document.createElement('div');
         currentSentenceBlock.className = 'sentence';
-        scroll.appendChild(currentSentenceBlock);
+        sentencesEl.appendChild(currentSentenceBlock);
+        while (sentencesEl.children.length > MAX_VISIBLE_SENTENCES) {
+          sentencesEl.removeChild(sentencesEl.firstChild);
+        }
         scroll.scrollTop = scroll.scrollHeight;
         startNextWord();
       }
@@ -631,18 +970,26 @@
         let pauseMs = SHORT_PAUSE_MS;
 
         if (emoji) {
+          // Familiarity: the more often you've seen a word, the shorter its dwell
+          wordSeenCount[currentWordStr] = (wordSeenCount[currentWordStr] || 0) + 1;
+          const seen = wordSeenCount[currentWordStr];
+          let compMs;
+          if (seen > 6)      compMs = 1400;   // very familiar (e.g. καλός)
+          else if (seen > 3) compMs = 2500;   // getting familiar
+          else               compMs = COMPREHENSION_MS;  // still learning
+
           const meaning = document.createElement('span');
-          meaning.className = 'meaning';
+          meaning.className = 'meaning' + (isTextLabel(emoji) ? ' text' : '');
           meaning.textContent = emoji;
           currentWordEl.appendChild(meaning);
           requestAnimationFrame(() => meaning.classList.add('show'));
 
-          pauseMs = COMPREHENSION_MS;
+          pauseMs = compMs;
           timerBar.classList.add('show');
           timerFill.style.transition = 'none';
           timerFill.style.transform = 'scaleX(1)';
           requestAnimationFrame(() => {
-            timerFill.style.transition = `transform ${COMPREHENSION_MS}ms linear`;
+            timerFill.style.transition = `transform ${compMs}ms linear`;
             timerFill.style.transform = 'scaleX(0)';
           });
         }
@@ -669,7 +1016,7 @@
 
         // Easy mode: quiz every sentence for the first N
         if (sentencesDone <= EASY_QUIZ_THRESHOLD) {
-          const candidates = currentSentenceWords.filter(w => WORDS[w] && WORDS[w].emoji);
+          const candidates = currentSentenceWords.filter(isQuizzable);
           if (candidates.length === 0) {
             previousSentenceWords = currentSentenceWords;
             setTimeout(startNextSentence, 500);
@@ -692,8 +1039,8 @@
         const useEarlier = Math.random() < PAIR_QUIZ_SECOND_CHANCE;
         const pool = useEarlier ? previousSentenceWords : currentSentenceWords;
         const fallback = useEarlier ? currentSentenceWords : previousSentenceWords;
-        let candidates = pool.filter(w => WORDS[w] && WORDS[w].emoji);
-        if (candidates.length === 0) candidates = fallback.filter(w => WORDS[w] && WORDS[w].emoji);
+        let candidates = pool.filter(isQuizzable);
+        if (candidates.length === 0) candidates = fallback.filter(isQuizzable);
         previousSentenceWords = null;
 
         if (candidates.length === 0) {
@@ -713,12 +1060,56 @@
         }
       }
 
+      // Quiz-only mode: skip scribing, run random quizzes back-to-back
+      function startQuizOnly() {
+        quizAttempts++;
+        if (quizAttempts % HANGMAN_EVERY === 0) {
+          startHangman();
+          return;
+        }
+        const candidates = Object.keys(WORDS).filter(isQuizzable);
+        if (candidates.length === 0) { startHangman(); return; }
+        startQuiz(pick(candidates));
+      }
+
+      // Called after any quiz/hangman finishes — routes to the right next step
+      function continueAfterQuiz() {
+        inQuiz = false;
+        clearQuizUI();
+        if (quizOnlyMode) {
+          hideSentences();
+          quillArea.style.display = 'none';
+          hint.textContent = 'Quiz-only mode — spell the word, or play ΑΙΝΙΓΜΑ · turn off in ⚙ settings';
+          startQuizOnly();
+        } else {
+          quillArea.style.display = '';
+          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          showSentences();
+          startNextSentence();
+        }
+      }
+
+      // Start the appropriate flow given the current mode (used on load and on mode change)
+      function startGameFlow() {
+        if (quizOnlyMode) {
+          hideSentences();
+          quillArea.style.display = 'none';
+          hint.textContent = 'Quiz-only mode — spell the word, or play ΑΙΝΙΓΜΑ · turn off in ⚙ settings';
+          startQuizOnly();
+        } else {
+          quillArea.style.display = '';
+          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
+          showSentences();
+          startNextSentence();
+        }
+      }
+
       function startQuiz(target) {
         inQuiz = true;
         quizProgress = '';
         const info = WORDS[target];
 
-        scroll.innerHTML = '';
+        hideSentences();
         const quiz = document.createElement('div');
         quiz.className = 'quiz';
 
@@ -733,7 +1124,7 @@
         lbl.textContent = 'spell this word';
 
         const emojiEl = document.createElement('div');
-        emojiEl.className = 'quiz-emoji';
+        emojiEl.className = 'quiz-emoji' + (isTextLabel(info.emoji) ? ' text' : '');
         emojiEl.textContent = info.emoji;
 
         const progressEl = document.createElement('div');
@@ -780,13 +1171,7 @@
             slot.classList.add('skipped');
           });
         }
-        setTimeout(() => {
-          inQuiz = false;
-          quillArea.style.display = '';
-          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
-          scroll.innerHTML = '';
-          startNextSentence();
-        }, 1100);
+        setTimeout(continueAfterQuiz, 1100);
       }
 
       function pickDecoys(targetLetters, n) {
@@ -830,13 +1215,7 @@
       function onQuizComplete() {
         quizPassed++;
         passedEl.textContent = quizPassed;
-        setTimeout(() => {
-          inQuiz = false;
-          quillArea.style.display = '';
-          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
-          scroll.innerHTML = '';
-          startNextSentence();
-        }, 1400);
+        setTimeout(continueAfterQuiz, 1400);
       }
 
       // ===== Hangman / ΑΙΝΙΓΜΑ =====
@@ -845,12 +1224,17 @@
         inQuiz = true;
         hangmanLives = HANGMAN_LIVES;
 
-        // pick a previously-seen sentence (prefer not the most recent)
-        let pool = completedSentences;
-        if (pool.length > 1) pool = pool.slice(0, -1);
+        // pick a sentence to guess. In normal mode prefer a previously-seen one
+        // (not the most recent); in quiz-only mode draw from the whole active pool.
+        let pool;
+        if (quizOnlyMode || completedSentences.length === 0) {
+          pool = SENTENCES;
+        } else {
+          pool = completedSentences.length > 1 ? completedSentences.slice(0, -1) : completedSentences;
+        }
         hangmanSentence = pick(pool);
 
-        scroll.innerHTML = '';
+        hideSentences();
 
         const quiz = document.createElement('div');
         quiz.className = 'quiz hangman';
@@ -886,7 +1270,7 @@
           const info = WORDS[word];
           if (info && info.emoji) {
             const em = document.createElement('span');
-            em.className = 'hg-emoji';
+            em.className = 'hg-emoji' + (isTextLabel(info.emoji) ? ' text' : '');
             em.textContent = info.emoji;
             wordSpan.appendChild(em);
           }
@@ -953,13 +1337,7 @@
 
       function exitHangman(delay) {
         document.querySelectorAll('.hg-key').forEach(k => k.disabled = true);
-        setTimeout(() => {
-          inQuiz = false;
-          quillArea.style.display = '';
-          hint.textContent = 'Click the quill to write the next letter · Hover a finished word for its meaning';
-          scroll.innerHTML = '';
-          startNextSentence();
-        }, delay);
+        setTimeout(continueAfterQuiz, delay);
       }
 
       function onHangmanWin() {
@@ -1009,7 +1387,120 @@
         if (!e.target.closest('.word.completed')) wordTip.classList.remove('show');
       });
 
-      startNextSentence();
+      // --- Welcome screen + config persistence ---
+      const STORAGE_KEY = 'greek-scribe.v1.config';
+      const welcomeOverlay = document.getElementById('welcome-overlay');
+
+      function loadConfig() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+      }
+      function saveConfig(cfg) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (e) {}
+      }
+      function persistConfig() {
+        saveConfig({ version: 1, dialect: currentDialect, activePacks: activePackIds, quizOnly: quizOnlyMode });
+      }
+      function applyDialectChoice(dialect) {
+        currentDialect = dialect;
+        const packs = dialect === 'koine'
+          ? ['logos-basics', 'koine-foundations']
+          : ['logos-basics', 'greek-gods'];
+        setActivePacks(packs);
+        persistConfig();
+      }
+
+      welcomeOverlay.querySelectorAll('.welcome-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          applyDialectChoice(btn.dataset.dialect);
+          welcomeOverlay.classList.add('hidden');
+          startGameFlow();
+        });
+      });
+
+      // --- Settings panel ---
+      const settingsBtn     = document.getElementById('settings-btn');
+      const settingsOverlay = document.getElementById('settings-overlay');
+      const settingsPacks   = document.getElementById('settings-packs');
+      const settingsClose   = document.getElementById('settings-close');
+      const settingsReset   = document.getElementById('settings-reset');
+      const quizOnlyToggle  = document.getElementById('quiz-only-toggle');
+
+      function renderSettingsPacks() {
+        settingsPacks.innerHTML = '';
+        Object.keys(PACKS).forEach(id => {
+          const pack = PACKS[id];
+          const label = document.createElement('label');
+          label.className = 'settings-pack';
+
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = activePackIds.includes(id);
+          cb.dataset.packId = id;
+          cb.addEventListener('change', onPackToggle);
+
+          const info = document.createElement('div');
+          info.className = 'settings-pack-info';
+          const name = document.createElement('span');
+          name.className = 'settings-pack-name';
+          name.textContent = pack.name;
+          const desc = document.createElement('span');
+          desc.className = 'settings-pack-desc';
+          desc.textContent = pack.description + ' · ' + pack.sentences.length + ' sentences';
+          info.append(name, desc);
+
+          label.append(cb, info);
+          settingsPacks.appendChild(label);
+        });
+      }
+
+      function onPackToggle() {
+        const checked = Array.from(settingsPacks.querySelectorAll('input:checked'))
+                             .map(cb => cb.dataset.packId);
+        setActivePacks(checked);
+        // Re-sync the checkboxes in case the "at least one pack" fallback kicked in
+        settingsPacks.querySelectorAll('input').forEach(cb => {
+          cb.checked = activePackIds.includes(cb.dataset.packId);
+        });
+        currentDialect = 'custom';
+        persistConfig();
+      }
+
+      function setQuizOnlyMode(on) {
+        quizOnlyMode = on;
+        persistConfig();
+        if (inQuiz) return;       // a quiz is mid-flight; it'll route correctly when it ends
+        startGameFlow();          // not in a quiz — switch flows immediately
+      }
+
+      settingsBtn.addEventListener('click', () => {
+        renderSettingsPacks();
+        quizOnlyToggle.checked = quizOnlyMode;
+        settingsOverlay.classList.remove('hidden');
+      });
+      quizOnlyToggle.addEventListener('change', () => setQuizOnlyMode(quizOnlyToggle.checked));
+      settingsClose.addEventListener('click', () => settingsOverlay.classList.add('hidden'));
+      settingsOverlay.addEventListener('click', (e) => {
+        if (e.target === settingsOverlay) settingsOverlay.classList.add('hidden');
+      });
+      settingsReset.addEventListener('click', () => {
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        location.reload();
+      });
+
+      // On load: restore saved config, or show the welcome screen
+      const savedConfig = loadConfig();
+      if (savedConfig && Array.isArray(savedConfig.activePacks) && savedConfig.activePacks.length) {
+        setActivePacks(savedConfig.activePacks);
+        quizOnlyMode = !!savedConfig.quizOnly;
+        currentDialect = savedConfig.dialect || 'custom';
+        welcomeOverlay.classList.add('hidden');
+        startGameFlow();
+      } else {
+        welcomeOverlay.classList.remove('hidden');
+      }
     })();
   </script>
 
