@@ -44,19 +44,15 @@ header{text-align:center;margin-bottom:24px}
 header h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.2;margin-bottom:6px}
 header p{font-size:14px;color:var(--ink-faint)}
 
-/* Input */
+/* Input (single Greek box) */
 .input-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:6px}
-.latin-input{width:100%;font-family:'Source Sans Pro',sans-serif;font-size:20px;padding:14px 16px;border:2px solid var(--card-border);border-radius:10px;background:var(--card-bg);color:var(--ink);outline:none;transition:border-color .2s,background .35s;resize:vertical;min-height:60px}
-.latin-input:focus{border-color:var(--accent)}
-.latin-input::placeholder{color:var(--ink-faint);font-size:16px}
+.greek-input{width:100%;font-family:'Noto Serif',serif;font-size:24px;color:var(--accent);letter-spacing:.03em;line-height:1.6;padding:14px 16px;border:2px solid var(--card-border);border-radius:10px;background:var(--card-bg);outline:none;transition:border-color .2s,background .35s;resize:vertical;min-height:120px}
+.greek-input:focus{border-color:var(--accent)}
+.greek-input::placeholder{font-family:'Source Sans Pro',sans-serif;font-size:16px;color:var(--ink-faint);letter-spacing:0}
 
-/* Output */
-.output-area{margin-top:16px;margin-bottom:24px}
-.output-box{position:relative;background:var(--card-bg);border:2px solid var(--card-border);border-radius:10px;padding:14px 16px;min-height:60px;transition:background .35s,border-color .35s}
-.output-text{font-family:'Noto Serif',serif;font-size:24px;color:var(--accent);letter-spacing:.03em;line-height:1.6;word-break:break-word;min-height:1.6em}
-.output-text.empty{font-family:'Source Sans Pro',sans-serif;font-size:16px;color:var(--ink-faint);letter-spacing:0}
-.copy-btn{position:absolute;top:10px;right:10px;padding:6px 14px;font-family:'Source Sans Pro',sans-serif;font-size:12px;font-weight:600;background:var(--bg-mid);color:var(--ink-light);border:1px solid var(--bg-deep);border-radius:6px;cursor:pointer;transition:all .2s}
-.copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* Copy button (lives in the action bar) */
+.copy-btn{padding:7px 16px;font-family:'Source Sans Pro',sans-serif;font-size:13px;font-weight:600;background:transparent;color:var(--ink-light);border:1.5px solid var(--card-border);border-radius:7px;cursor:pointer;transition:all .2s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
 .copy-btn.copied{background:var(--correct);color:#fff;border-color:var(--correct)}
 
 /* Live preview */
@@ -94,8 +90,7 @@ header p{font-size:14px;color:var(--ink-faint)}
 @media(max-width:500px){
   .container{padding:32px 14px 80px}
   header h1{font-size:26px}
-  .latin-input{font-size:18px}
-  .output-text{font-size:20px}
+  .greek-input{font-size:20px}
   .ref-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
   .theme-toggle{top:10px;right:10px}
   .theme-toggle-label{display:none}
@@ -103,6 +98,54 @@ header p{font-size:14px;color:var(--ink-faint)}
 }
 .home-link{position:fixed;top:16px;left:16px;z-index:100;font-size:12px;font-weight:600;color:var(--ink-faint);text-decoration:none;letter-spacing:.04em;transition:color .2s}
 .home-link:hover{color:var(--accent)}
+
+/* ── Save bar ── */
+.save-bar{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.save-status{font-size:12px;color:var(--ink-faint);font-style:italic;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.save-btn{padding:7px 18px;font-family:'Source Sans Pro',sans-serif;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:7px;cursor:pointer;transition:background .2s}
+.save-btn:hover{background:var(--ink-light)}
+.new-btn{padding:7px 16px;font-family:'Source Sans Pro',sans-serif;font-size:13px;font-weight:600;background:transparent;color:var(--ink-light);border:1.5px solid var(--card-border);border-radius:7px;cursor:pointer;transition:all .2s}
+.new-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── Saved list ── */
+.saved-section{margin-top:8px}
+.saved-toggle{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;cursor:pointer;user-select:none;font-size:14px;font-weight:600;color:var(--ink-light);border-radius:8px;transition:color .2s}
+.saved-toggle:hover{color:var(--accent)}
+.saved-toggle .arrow{transition:transform .2s;display:inline-block}
+.saved-toggle .arrow.open{transform:rotate(180deg)}
+.saved-count{font-size:12px;font-weight:400;color:var(--ink-faint)}
+.saved-content{display:none;margin-top:8px}
+.saved-content.show{display:block}
+.saved-empty{text-align:center;font-size:14px;color:var(--ink-faint);font-style:italic;padding:24px 0}
+.saved-item{background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;padding:12px 14px;margin-bottom:8px;transition:background .35s,border-color .35s}
+.saved-item:last-child{margin-bottom:0}
+.saved-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);cursor:pointer;display:block;margin-bottom:2px}
+.saved-title:hover{color:var(--accent)}
+.saved-title-input{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink);background:var(--bg-mid);border:1.5px solid var(--accent);border-radius:4px;padding:2px 6px;width:100%;outline:none;display:block;margin-bottom:2px}
+.saved-meta{font-size:11px;color:var(--ink-faint);margin-bottom:6px}
+.saved-preview{font-family:'Noto Serif',serif;font-size:16px;color:var(--accent);line-height:1.5;margin-bottom:10px;word-break:break-word;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.saved-actions{display:flex;gap:6px;flex-wrap:wrap}
+.sav-btn{padding:5px 13px;font-family:'Source Sans Pro',sans-serif;font-size:12px;font-weight:600;background:var(--bg-mid);color:var(--ink-light);border:1px solid var(--bg-deep);border-radius:6px;cursor:pointer;transition:all .2s}
+.sav-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sav-btn.del:hover{background:#a83030;border-color:#a83030;color:#fff}
+.sav-btn.copied{background:var(--correct);color:#fff;border-color:var(--correct)}
+
+/* ── Confirm modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:28px 24px 22px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.18);transition:background .35s,border-color .35s}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.modal-body{font-size:14px;color:var(--ink-light);line-height:1.55;margin-bottom:8px}
+.modal-preview{font-family:'Noto Serif',serif;font-size:15px;color:var(--accent);margin:0 0 16px;line-height:1.4;word-break:break-word;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.modal-cancel{padding:8px 18px;font-family:'Source Sans Pro',sans-serif;font-size:13px;font-weight:600;background:transparent;color:var(--ink-light);border:1.5px solid var(--card-border);border-radius:7px;cursor:pointer;transition:all .2s}
+.modal-cancel:hover{border-color:var(--accent);color:var(--accent)}
+.modal-confirm{padding:8px 18px;font-family:'Source Sans Pro',sans-serif;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:7px;cursor:pointer;transition:background .2s}
+.modal-confirm.danger:hover{background:#a83030}
+
+@media(max-width:500px){
+  .save-status{flex-basis:100%;order:-1}
+}
 </style>
 </head>
 <body>
@@ -125,17 +168,16 @@ header p{font-size:14px;color:var(--ink-faint)}
 </header>
 
 <div>
-  <div class="input-label">Type here (Latin characters)</div>
-  <textarea class="latin-input" id="latinInput" placeholder='Try typing: anthropos or hippos or lo/gos' rows="3" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+  <div class="input-label">Type here &mdash; Greek appears as you type</div>
+  <textarea class="greek-input" id="greekInput" placeholder='Try typing: anthropos or hippos or lo/gos' rows="4" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>
+  <div class="live-hint">Final sigma (&#962;) is automatic at end of words</div>
 </div>
 
-<div class="output-area">
-  <div class="input-label">Greek output</div>
-  <div class="output-box">
-    <div class="output-text empty" id="greekOutput">Greek will appear here as you type&hellip;</div>
-    <button class="copy-btn" id="copyBtn" onclick="copyGreek()">Copy</button>
-  </div>
-  <div class="live-hint">Final sigma (&#962;) is automatic at end of words</div>
+<div class="save-bar">
+  <span class="save-status" id="saveStatus">New paragraph</span>
+  <button class="copy-btn" id="copyBtn" onclick="copyGreek()">Copy</button>
+  <button class="new-btn" onclick="onNew()" title="Clear and start a new paragraph">New</button>
+  <button class="save-btn" id="saveBtn" onclick="onSave()" title="Save this paragraph">Save</button>
 </div>
 
 <div class="ref-section">
@@ -199,6 +241,17 @@ header p{font-size:14px;color:var(--ink-faint)}
       <p><strong>Final sigma</strong> is automatic &mdash; any &sigma; at the end of a word becomes &sigmaf;.</p>
     </div>
 
+  </div>
+</div>
+
+<div class="saved-section">
+  <div class="saved-toggle" onclick="toggleSaved()">
+    <span>Saved Paragraphs</span>
+    <span class="saved-count" id="savedCount"></span>
+    <span class="arrow" id="savedArrow">&#9660;</span>
+  </div>
+  <div class="saved-content" id="savedContent">
+    <div id="savedList"></div>
   </div>
 </div>
 </div>
@@ -325,35 +378,38 @@ function getBaseChar(s){
   return nfd[0] || '';
 }
 
+// Combining marks share combining class 230, so NFC won't reorder them; we must
+// emit them in Greek's canonical order (breathing/diaeresis, then accent, then
+// iota subscript) for precomposed glyphs like ἅ to form.
+function markPriority(code){
+  if(code === 0x0313 || code === 0x0314 || code === 0x0308) return 1; // breathing / diaeresis
+  if(code === 0x0301 || code === 0x0300 || code === 0x0342) return 2; // accent
+  if(code === 0x0345) return 3;                                       // iota subscript
+  return 4;
+}
+
 function addDiacritical(charStr, combCode){
   var nfd = charStr.normalize('NFD');
-  
-  // Remove conflicting diacriticals of same category
-  var filtered = nfd[0];
+  var base = nfd[0];
+  var marks = [];
   for(var i = 1; i < nfd.length; i++){
     var existing = nfd.charCodeAt(i);
-    // Accent category: acute, grave, circumflex
+    // drop a conflicting accent
     if((combCode === 0x0301 || combCode === 0x0300 || combCode === 0x0342) &&
-       (existing === 0x0301 || existing === 0x0300 || existing === 0x0342)){
-      continue; // skip conflicting accent
-    }
-    // Breathing category: smooth, rough
+       (existing === 0x0301 || existing === 0x0300 || existing === 0x0342)) continue;
+    // drop a conflicting breathing
     if((combCode === 0x0313 || combCode === 0x0314) &&
-       (existing === 0x0313 || existing === 0x0314)){
-      continue; // skip conflicting breathing
-    }
-    // Skip duplicate
+       (existing === 0x0313 || existing === 0x0314)) continue;
+    // drop a duplicate
     if(existing === combCode) continue;
-    
-    filtered += nfd[i];
+    marks.push(existing);
   }
-  
-  // Add new combining mark after base char
-  // Canonical ordering: breathing marks should come before accents
-  // Simple approach: add and let NFC handle ordering
-  filtered = filtered[0] + String.fromCharCode(combCode) + filtered.slice(1);
-  
-  return filtered.normalize('NFC');
+  marks.push(combCode);
+  marks.sort(function(a, b){ return markPriority(a) - markPriority(b); });
+
+  var s = base;
+  for(var j = 0; j < marks.length; j++) s += String.fromCharCode(marks[j]);
+  return s.normalize('NFC');
 }
 
 function applyFinalSigma(text){
@@ -361,35 +417,134 @@ function applyFinalSigma(text){
   return text.replace(/\u03C3(?=[\s\.,;:!\?\-\u00B7]|$)/g, '\u03C2');
 }
 
-// ═══════ LIVE CONVERSION ═══════
-var inp = document.getElementById('latinInput');
-var out = document.getElementById('greekOutput');
+// ═══════ INCREMENTAL CONVERSION ENGINE ═══════
+// The single textarea holds Greek; Latin keystrokes are intercepted via
+// `beforeinput` and converted in place. Greek is the source of truth.
+var inp = document.getElementById('greekInput');
+var pendingDashIndex = -1; // index of an armed rough-breathing '-' placeholder, or -1
 
-inp.addEventListener('input', function(){
-  var val = this.value;
-  if(!val){
-    out.textContent = 'Greek will appear here as you type\u2026';
-    out.className = 'output-text empty';
+// \u03c4/\u03c0/\u03ba (and capitals) \u2192 \u03b8/\u03c6/\u03c7 when an h follows
+var hDigraph = {
+  '\u03c4':'\u03b8','\u03c0':'\u03c6','\u03ba':'\u03c7',
+  '\u03a4':'\u0398','\u03a0':'\u03a6','\u039a':'\u03a7'
+};
+var COMBINING = /[\u0300-\u036f\u0345\u1dc0-\u1dff]/;
+
+function clearPending(){ pendingDashIndex = -1; }
+
+// The grapheme (base + any combining marks) immediately left of the caret.
+function prevGrapheme(v, caret){
+  if(caret <= 0) return { start: caret, str: '' };
+  var i = caret - 1;
+  while(i > 0 && COMBINING.test(v[i])) i--;
+  return { start: i, str: v.slice(i, caret) };
+}
+
+// Replace [start,end) with `insert` and place the caret after it.
+function splice(start, end, insert){
+  var v = inp.value;
+  inp.value = v.slice(0, start) + insert + v.slice(end);
+  inp.selectionStart = inp.selectionEnd = start + insert.length;
+}
+
+// Recompute every sigma: medial \u03c3, final \u03c2. Length-preserving, so caret holds.
+function normalizeSigma(){
+  var v = inp.value;
+  var nv = v.replace(/\u03c2/g, '\u03c3').replace(/\u03c3(?=[\s.,;:!?\u00b7\-]|$)/g, '\u03c2');
+  if(nv !== v){
+    var s = inp.selectionStart, e = inp.selectionEnd;
+    inp.value = nv;
+    inp.selectionStart = s; inp.selectionEnd = e;
+  }
+}
+
+function handleH(){
+  var caret = inp.selectionStart;
+  var prev = prevGrapheme(inp.value, caret);
+  var ps = prev.str;
+  // 1. digraph retro-replace: \u03c4/\u03c0/\u03ba \u2192 \u03b8/\u03c6/\u03c7
+  if(hDigraph[ps]){ splice(prev.start, caret, hDigraph[ps]); clearPending(); return; }
+  // 2. rho \u2192 rough-breathing rho
+  if(ps && breathableRho.indexOf(ps) >= 0){ splice(prev.start, caret, addDiacritical(ps, 0x0314)); clearPending(); return; }
+  // 3. after a vowel \u2192 rough breathing on it
+  if(ps && isVowel(getBaseChar(ps))){ splice(prev.start, caret, addDiacritical(ps, 0x0314)); clearPending(); return; }
+  // 4. otherwise \u2192 drop a literal '-' placeholder and arm pending-rough
+  clearPending();
+  splice(caret, caret, '-');
+  pendingDashIndex = caret;
+}
+
+function processChar(ch){
+  // typing over a selection replaces it first
+  var caret = inp.selectionStart, selEnd = inp.selectionEnd;
+  if(caret !== selEnd){ splice(caret, selEnd, ''); clearPending(); caret = inp.selectionStart; }
+
+  if(ch === 'h' || ch === 'H'){ handleH(); return; }
+
+  // diacritical modifier \u2014 applies to the vowel (or vowel/rho) left of the caret
+  if(diacritMap[ch] !== undefined){
+    var combCode = diacritMap[ch];
+    var prev = prevGrapheme(inp.value, caret);
+    if(prev.str){
+      var base = getBaseChar(prev.str);
+      var ok = (combCode === 0x0314 || combCode === 0x0313) ? isVowelOrRho(base) : isVowel(base);
+      if(ok) splice(prev.start, caret, addDiacritical(prev.str, combCode));
+    }
+    clearPending();
     return;
   }
-  var greek = convert(val);
-  out.textContent = greek;
-  out.className = 'output-text';
+
+  // letter
+  if(latinToGreek[ch]){
+    var g = latinToGreek[ch];
+    var v = inp.value;
+    // an eligible vowel/rho consumes an armed dash \u2192 rough breathing
+    if(pendingDashIndex >= 0 && pendingDashIndex === caret - 1 && v[pendingDashIndex] === '-' && isVowelOrRho(getBaseChar(g))){
+      splice(pendingDashIndex, pendingDashIndex + 1, addDiacritical(g, 0x0314));
+      clearPending();
+      return;
+    }
+    clearPending();
+    splice(caret, caret, g);
+    return;
+  }
+
+  // pass-through (space, digits, punctuation); a mistyped consonant leaves the dash literal
+  clearPending();
+  splice(caret, caret, ch);
+}
+
+function insertTyped(data){
+  for(var i = 0; i < data.length; i++) processChar(data[i]);
+  normalizeSigma();
+}
+
+inp.addEventListener('beforeinput', function(e){
+  if(e.inputType === 'insertText' && e.data != null){
+    e.preventDefault();
+    insertTyped(e.data);
+  }
 });
 
-// Also handle paste
-inp.addEventListener('paste', function(){
-  var self = this;
-  setTimeout(function(){
-    var e = new Event('input');
-    self.dispatchEvent(e);
-  }, 0);
+// Native edits (delete, line break) invalidate the armed dash and re-run final sigma.
+inp.addEventListener('input', function(){
+  clearPending();
+  normalizeSigma();
+});
+
+// Paste: convert pasted Latin to Greek (existing Greek passes through unchanged).
+inp.addEventListener('paste', function(e){
+  e.preventDefault();
+  var text = (e.clipboardData || window.clipboardData).getData('text');
+  splice(inp.selectionStart, inp.selectionEnd, convert(text));
+  clearPending();
+  normalizeSigma();
 });
 
 function copyGreek(){
-  var text = document.getElementById('greekOutput').textContent;
-  if(!text || text.indexOf('will appear') >= 0) return;
-  
+  var text = inp.value;
+  if(!text) return;
+
   if(navigator.clipboard){
     navigator.clipboard.writeText(text).then(function(){
       showCopied();
@@ -440,6 +595,271 @@ try{
   if(s==='dark')document.documentElement.setAttribute('data-theme','dark');
   else if(!s&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');
 }catch(e){}
+
+// ═══════ SAVES ═══════
+var SAVES_KEY = 'greek-keyboard.v1.saves';
+var currentEditId = null;
+var lastSavedGreek = '';
+var confirmCallback = null;
+var savesData = { version:1, items:[] };
+
+function loadSavesData(){
+  try{
+    var raw=localStorage.getItem(SAVES_KEY);
+    if(raw){ var p=JSON.parse(raw); if(p&&Array.isArray(p.items)) savesData=p; }
+  }catch(e){}
+}
+
+function persistSavesData(){
+  try{ localStorage.setItem(SAVES_KEY,JSON.stringify(savesData)); }catch(e){}
+}
+
+function genId(){
+  try{ return crypto.randomUUID(); }catch(e){}
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+}
+
+function autoTitle(greek){
+  var t=greek.trim().slice(0,32);
+  return (t||'Untitled')+(greek.length>32?'…':'');
+}
+
+function isDirty(){
+  return inp.value !== lastSavedGreek;
+}
+
+function updateSaveStatus(){
+  var status=document.getElementById('saveStatus');
+  var saveBtn=document.getElementById('saveBtn');
+  if(!currentEditId){
+    status.textContent='New paragraph';
+    saveBtn.textContent='Save';
+  } else {
+    var rec=null;
+    for(var i=0;i<savesData.items.length;i++){ if(savesData.items[i].id===currentEditId){ rec=savesData.items[i]; break; } }
+    status.textContent=rec?('Editing: '+rec.title):'Editing';
+    saveBtn.textContent='Update';
+  }
+}
+
+function onSave(){
+  var greek=inp.value;
+  if(!greek.trim()) return;
+  var now=Date.now();
+  if(currentEditId){
+    for(var i=0;i<savesData.items.length;i++){
+      if(savesData.items[i].id===currentEditId){
+        savesData.items[i].greek=greek;
+        savesData.items[i].updatedAt=now;
+        break;
+      }
+    }
+  } else {
+    var rec={id:genId(),title:autoTitle(greek),greek:greek,createdAt:now,updatedAt:now};
+    savesData.items.unshift(rec);
+    currentEditId=rec.id;
+  }
+  lastSavedGreek=greek;
+  persistSavesData();
+  renderSaveList();
+  updateSaveStatus();
+  // Auto-open saved section on first save or if currently closed
+  var sc=document.getElementById('savedContent');
+  if(!sc.classList.contains('show')) toggleSaved();
+  // Flash button
+  var btn=document.getElementById('saveBtn');
+  btn.textContent='Saved!';
+  btn.style.background='var(--correct)';
+  setTimeout(function(){ btn.style.background=''; updateSaveStatus(); },1200);
+}
+
+function onNew(){
+  if(isDirty()&&inp.value.trim()){
+    openConfirm('Discard changes?','You have unsaved changes. Start a new paragraph anyway?','','Discard',true,doClear);
+  } else {
+    doClear();
+  }
+}
+
+function doClear(){
+  inp.value='';
+  clearPending();
+  currentEditId=null;
+  lastSavedGreek='';
+  updateSaveStatus();
+  inp.focus();
+}
+
+function onLoad(id){
+  if(isDirty()&&inp.value.trim()){
+    openConfirm('Discard changes?','You have unsaved changes. Load a different paragraph anyway?','','Discard',true,function(){ doLoad(id); });
+  } else {
+    doLoad(id);
+  }
+}
+
+function doLoad(id){
+  var rec=null;
+  for(var i=0;i<savesData.items.length;i++){ if(savesData.items[i].id===id){ rec=savesData.items[i]; break; } }
+  if(!rec) return;
+  inp.value=rec.greek||convert(rec.latin||'');
+  clearPending();
+  currentEditId=id;
+  lastSavedGreek=inp.value;
+  updateSaveStatus();
+  inp.focus();
+  inp.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function onDelete(id){
+  var rec=null;
+  for(var i=0;i<savesData.items.length;i++){ if(savesData.items[i].id===id){ rec=savesData.items[i]; break; } }
+  if(!rec) return;
+  var preview=rec.greek?rec.greek.slice(0,80)+(rec.greek.length>80?'…':''):'';
+  openConfirm('Delete saved paragraph?','This can\'t be undone.',preview,'Delete',true,function(){
+    var filtered=[];
+    for(var i=0;i<savesData.items.length;i++){ if(savesData.items[i].id!==id) filtered.push(savesData.items[i]); }
+    savesData.items=filtered;
+    if(currentEditId===id){ currentEditId=null; lastSavedGreek=inp.value; updateSaveStatus(); }
+    persistSavesData();
+    renderSaveList();
+  });
+}
+
+function onCopyFromList(id,btn){
+  var rec=null;
+  for(var i=0;i<savesData.items.length;i++){ if(savesData.items[i].id===id){ rec=savesData.items[i]; break; } }
+  if(!rec) return;
+  var text=rec.greek||convert(rec.latin||'');
+  function flash(){ btn.textContent='Copied!'; btn.classList.add('copied'); setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('copied'); },1500); }
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(flash).catch(function(){ fallbackCopy(text); flash(); }); }
+  else{ fallbackCopy(text); flash(); }
+}
+
+function startRename(id){
+  var titleEl=document.getElementById('stitle-'+id);
+  if(!titleEl) return;
+  var rec=null;
+  for(var i=0;i<savesData.items.length;i++){ if(savesData.items[i].id===id){ rec=savesData.items[i]; break; } }
+  if(!rec) return;
+  var input=document.createElement('input');
+  input.type='text'; input.className='saved-title-input'; input.value=rec.title;
+  titleEl.replaceWith(input);
+  input.focus(); input.select();
+  var committed=false;
+  function commit(){
+    if(committed) return; committed=true;
+    rec.title=input.value.trim()||autoTitle(rec.greek||'');
+    rec.updatedAt=Date.now();
+    persistSavesData();
+    renderSaveList();
+    updateSaveStatus();
+  }
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){ e.preventDefault(); input.blur(); }
+    if(e.key==='Escape'){ committed=true; renderSaveList(); }
+  });
+}
+
+function fmtDate(ts){
+  var d=new Date(ts),now=new Date(),diff=now-d;
+  if(diff<60000) return 'just now';
+  if(diff<3600000) return Math.floor(diff/60000)+'m ago';
+  if(diff<86400000) return Math.floor(diff/3600000)+'h ago';
+  var opts={month:'short',day:'numeric'};
+  if(d.getFullYear()!==now.getFullYear()) opts.year='numeric';
+  return d.toLocaleDateString(undefined,opts);
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderSaveList(){
+  var list=document.getElementById('savedList');
+  var countEl=document.getElementById('savedCount');
+  var items=savesData.items;
+  countEl.textContent=items.length?'('+items.length+')':'';
+  if(!items.length){
+    list.innerHTML='<div class="saved-empty">No saved paragraphs yet.</div>';
+    return;
+  }
+  var html='';
+  for(var i=0;i<items.length;i++){
+    var r=items[i];
+    var preview=r.greek||convert(r.latin||'');
+    var prevShort=preview.length>100?preview.slice(0,100)+'…':preview;
+    var meta=r.createdAt!==r.updatedAt?('edited '+fmtDate(r.updatedAt)):('saved '+fmtDate(r.updatedAt));
+    html+='<div class="saved-item">';
+    html+='<span class="saved-title" id="stitle-'+r.id+'" title="Click to rename" onclick="startRename(\''+r.id+'\')" role="button" tabindex="0">'+escHtml(r.title)+'</span>';
+    html+='<div class="saved-meta">'+escHtml(meta)+'</div>';
+    html+='<div class="saved-preview">'+escHtml(prevShort)+'</div>';
+    html+='<div class="saved-actions">';
+    html+='<button class="sav-btn" onclick="onLoad(\''+r.id+'\')">Load</button>';
+    html+='<button class="sav-btn" onclick="onCopyFromList(\''+r.id+'\',this)">Copy</button>';
+    html+='<button class="sav-btn del" onclick="onDelete(\''+r.id+'\')">Delete</button>';
+    html+='</div>';
+    html+='</div>';
+  }
+  list.innerHTML=html;
+}
+
+function toggleSaved(){
+  var c=document.getElementById('savedContent'),a=document.getElementById('savedArrow');
+  var show=!c.classList.contains('show');
+  c.classList.toggle('show',show);
+  a.classList.toggle('open',show);
+}
+
+// ── Confirm modal ──
+function openConfirm(title,body,preview,okLabel,danger,callback){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmBody').textContent=body;
+  var p=document.getElementById('confirmPreview');
+  p.textContent=preview; p.style.display=preview?'':'none';
+  var okBtn=document.getElementById('confirmOkBtn');
+  okBtn.textContent=okLabel;
+  okBtn.className='modal-confirm'+(danger?' danger':'');
+  confirmCallback=callback;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+
+function closeConfirm(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  confirmCallback=null;
+}
+
+function confirmOk(){
+  var cb=confirmCallback;
+  closeConfirm();
+  if(cb) cb();
+}
+
+function overlayClick(e){
+  if(e.target===document.getElementById('confirmOverlay')) closeConfirm();
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeConfirm();
+});
+
+// Init
+loadSavesData();
+renderSaveList();
+updateSaveStatus();
 </script>
+
+<div class="modal-overlay" id="confirmOverlay" onclick="overlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="confirmTitle"></div>
+    <div class="modal-body" id="confirmBody"></div>
+    <div class="modal-preview" id="confirmPreview"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="modal-confirm danger" id="confirmOkBtn" onclick="confirmOk()">OK</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
