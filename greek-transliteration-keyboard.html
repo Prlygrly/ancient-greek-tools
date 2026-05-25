@@ -58,6 +58,15 @@ header p{font-size:14px;color:var(--ink-faint)}
 /* Live preview */
 .live-hint{font-size:12px;color:var(--ink-faint);margin-top:6px;text-align:right;font-style:italic}
 
+/* Diacritic buttons */
+.diacritic-bar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.dia-btn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px;padding:6px 8px;background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:8px;cursor:pointer;transition:all .15s}
+.dia-btn .dia-glyph{font-family:'Noto Serif',serif;font-size:20px;color:var(--accent);line-height:1}
+.dia-btn .dia-label{font-family:'Source Sans Pro',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-faint)}
+.dia-btn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.dia-btn:active{background:var(--accent);border-color:var(--accent)}
+.dia-btn:active .dia-glyph,.dia-btn:active .dia-label{color:#fff}
+
 /* Reference */
 .ref-section{margin-top:8px}
 .ref-toggle{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;cursor:pointer;user-select:none;font-size:14px;font-weight:600;color:var(--ink-light);border-radius:8px;transition:color .2s}
@@ -170,6 +179,15 @@ header p{font-size:14px;color:var(--ink-faint)}
 <div>
   <div class="input-label">Type here &mdash; Greek appears as you type</div>
   <textarea class="greek-input" id="greekInput" placeholder='Try typing: anthropos or hippos or lo/gos' rows="4" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>
+  <div class="diacritic-bar" id="diacriticBar" aria-label="Diacritic buttons">
+    <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="applyMarkAtCaret(0x0301)" title="Acute accent"><span class="dia-glyph">&#x1F71;</span><span class="dia-label">acute</span></button>
+    <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="applyMarkAtCaret(0x0300)" title="Grave accent"><span class="dia-glyph">&#x1F70;</span><span class="dia-label">grave</span></button>
+    <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="applyMarkAtCaret(0x0342)" title="Circumflex"><span class="dia-glyph">&#x1FB6;</span><span class="dia-label">circ</span></button>
+    <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="applyMarkAtCaret(0x0314)" title="Rough breathing"><span class="dia-glyph">&#x1F01;</span><span class="dia-label">rough</span></button>
+    <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="applyMarkAtCaret(0x0313)" title="Smooth breathing"><span class="dia-glyph">&#x1F00;</span><span class="dia-label">smooth</span></button>
+    <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="applyMarkAtCaret(0x0345)" title="Iota subscript"><span class="dia-glyph">&#x1FB3;</span><span class="dia-label">iota</span></button>
+    <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="applyMarkAtCaret(0x0308)" title="Diaeresis"><span class="dia-glyph">&#x03CA;</span><span class="dia-label">diaer</span></button>
+  </div>
   <div class="live-hint">Final sigma (&#962;) is automatic at end of words</div>
 </div>
 
@@ -231,6 +249,9 @@ header p{font-size:14px;color:var(--ink-faint)}
         <tr><td>)</td><td>Smooth breathing (&#702;)</td><td><code>a)</code> &rarr; <span class="gc">&#x1F00;</span></td></tr>
         <tr><td>|</td><td>Iota subscript</td><td><code>a|</code> &rarr; <span class="gc">&#x1FB3;</span></td></tr>
         <tr><td>:</td><td>Diaeresis (&uml;)</td><td><code>i:</code> &rarr; <span class="gc">&#x03CA;</span></td></tr>
+        <tr><td>'</td><td>Acute &mdash; press again to cycle (&rarr; grave &rarr; none)</td><td><code>a'</code> &rarr; <span class="gc">&#x1F71;</span> , <code>a''</code> &rarr; <span class="gc">&#x1F70;</span></td></tr>
+        <tr><td>~</td><td>Circumflex</td><td><code>a~</code> &rarr; <span class="gc">&#x1FB6;</span></td></tr>
+        <tr><td>hh</td><td>Smooth breathing (press <code>h</code> again to cycle)</td><td><code>ahh</code> &rarr; <span class="gc">&#x1F00;</span></td></tr>
       </tbody>
     </table>
 
@@ -239,6 +260,8 @@ header p{font-size:14px;color:var(--ink-faint)}
       <p><strong>Rough breathing on rho:</strong> <code>rh</code> &rarr; <span style="font-family:'Noto Serif';font-size:20px;color:var(--accent)">&#x1FE5;</span> (word-initial rho). This doesn&rsquo;t conflict with digraphs since <code>rh</code> isn&rsquo;t one.</p>
       <p><strong><code>(</code> still works</strong> for rough breathing too, if you prefer: <code>a(</code> and <code>ah</code> do the same thing.</p>
       <p><strong>Final sigma</strong> is automatic &mdash; any &sigma; at the end of a word becomes &sigmaf;.</p>
+      <p><strong>Two-key shortcuts:</strong> <code>'</code> and <code>h</code> cycle with each press &mdash; <code>'</code> = acute, <code>''</code> = grave; <code>h</code> = rough, <code>hh</code> = smooth (press once more to clear). <code>~</code> = circumflex. They work alongside the keys above.</p>
+      <p><strong>Buttons:</strong> the row under the text box applies any mark to the letter before the cursor &mdash; handy on mobile when you don&rsquo;t want to remember a key.</p>
     </div>
 
   </div>
@@ -272,11 +295,18 @@ var diacritMap = {
   '/': 0x0301,  // acute
   '\\': 0x0300, // grave
   '=': 0x0342,  // circumflex (perispomeni)
+  '~': 0x0342,  // circumflex (Lexilogos-style alias)
   '(': 0x0314,  // rough breathing
   ')': 0x0313,  // smooth breathing
   '|': 0x0345,  // iota subscript
   ':': 0x0308   // diaeresis
 };
+
+// Cycle definitions for the two-key shortcuts ( ' and h ). Index 0 means "no mark".
+var ACCENT_MARKS = [0x0301, 0x0300, 0x0342]; // acute, grave, circumflex (all accents, for stripping)
+var ACCENT_CYCLE = [0, 0x0301, 0x0300];      // none -> acute -> grave -> none
+var BREATH_MARKS = [0x0314, 0x0313];         // rough, smooth
+var BREATH_CYCLE = [0, 0x0314, 0x0313];      // none -> rough -> smooth -> none
 
 var vowelBases = '\u03B1\u03B5\u03B7\u03B9\u03BF\u03C5\u03C9\u0391\u0395\u0397\u0399\u039F\u03A5\u03A9';
 // rho can also take breathing marks
@@ -412,6 +442,29 @@ function addDiacritical(charStr, combCode){
   return s.normalize('NFC');
 }
 
+// Remove every combining mark in `removeSet` from a grapheme.
+function removeMark(charStr, removeSet){
+  var nfd = charStr.normalize('NFD');
+  var out = nfd[0] || '';
+  for(var i = 1; i < nfd.length; i++){
+    if(removeSet.indexOf(nfd.charCodeAt(i)) >= 0) continue;
+    out += nfd[i];
+  }
+  return out.normalize('NFC');
+}
+
+// Advance a grapheme one step through a cycle of marks (cycle[0] === 0 means "none").
+// removeSet lists every mark in the category so stray ones (e.g. circumflex) get stripped.
+function cycleMark(charStr, cycle, removeSet){
+  var nfd = charStr.normalize('NFD');
+  var idx = 0;
+  for(var k = 1; k < cycle.length; k++){
+    if(nfd.indexOf(String.fromCharCode(cycle[k])) >= 0){ idx = k; break; }
+  }
+  var next = cycle[(idx + 1) % cycle.length];
+  return next === 0 ? removeMark(charStr, removeSet) : addDiacritical(charStr, next);
+}
+
 function applyFinalSigma(text){
   // Replace σ at end of word (before space, punctuation, or end) with ς
   return text.replace(/\u03C3(?=[\s\.,;:!\?\-\u00B7]|$)/g, '\u03C2');
@@ -421,7 +474,8 @@ function applyFinalSigma(text){
 // The single textarea holds Greek; Latin keystrokes are intercepted via
 // `beforeinput` and converted in place. Greek is the source of truth.
 var inp = document.getElementById('greekInput');
-var pendingDashIndex = -1; // index of an armed rough-breathing '-' placeholder, or -1
+var pendingDashIndex = -1;      // index of an armed breathing '-' placeholder, or -1
+var pendingBreathing = 'rough'; // which breathing the armed dash will apply ('rough' | 'smooth')
 
 // \u03c4/\u03c0/\u03ba (and capitals) \u2192 \u03b8/\u03c6/\u03c7 when an h follows
 var hDigraph = {
@@ -430,7 +484,7 @@ var hDigraph = {
 };
 var COMBINING = /[\u0300-\u036f\u0345\u1dc0-\u1dff]/;
 
-function clearPending(){ pendingDashIndex = -1; }
+function clearPending(){ pendingDashIndex = -1; pendingBreathing = 'rough'; }
 
 // The grapheme (base + any combining marks) immediately left of the caret.
 function prevGrapheme(v, caret){
@@ -460,18 +514,49 @@ function normalizeSigma(){
 
 function handleH(){
   var caret = inp.selectionStart;
-  var prev = prevGrapheme(inp.value, caret);
+  var v = inp.value;
+  // 0. an armed dash right before the caret -> toggle its breathing (rough <-> smooth)
+  if(pendingDashIndex >= 0 && pendingDashIndex === caret - 1 && v[pendingDashIndex] === '-'){
+    pendingBreathing = (pendingBreathing === 'rough') ? 'smooth' : 'rough';
+    return;
+  }
+  var prev = prevGrapheme(v, caret);
   var ps = prev.str;
-  // 1. digraph retro-replace: \u03c4/\u03c0/\u03ba \u2192 \u03b8/\u03c6/\u03c7
+  // 1. digraph retro-replace: \u03c4/\u03c0/\u03ba -> \u03b8/\u03c6/\u03c7
   if(hDigraph[ps]){ splice(prev.start, caret, hDigraph[ps]); clearPending(); return; }
-  // 2. rho \u2192 rough-breathing rho
-  if(ps && breathableRho.indexOf(ps) >= 0){ splice(prev.start, caret, addDiacritical(ps, 0x0314)); clearPending(); return; }
-  // 3. after a vowel \u2192 rough breathing on it
-  if(ps && isVowel(getBaseChar(ps))){ splice(prev.start, caret, addDiacritical(ps, 0x0314)); clearPending(); return; }
-  // 4. otherwise \u2192 drop a literal '-' placeholder and arm pending-rough
+  // 2. on a vowel or rho -> cycle breathing (none -> rough -> smooth -> none)
+  if(ps && isVowelOrRho(getBaseChar(ps))){ splice(prev.start, caret, cycleMark(ps, BREATH_CYCLE, BREATH_MARKS)); clearPending(); return; }
+  // 3. otherwise -> drop a literal '-' placeholder, armed for rough
   clearPending();
   splice(caret, caret, '-');
   pendingDashIndex = caret;
+  pendingBreathing = 'rough';
+}
+
+// ' (and curly ') \u2014 cycle the preceding vowel's accent; literal apostrophe (elision) if no vowel.
+function handleApostrophe(){
+  var caret = inp.selectionStart;
+  var prev = prevGrapheme(inp.value, caret);
+  if(prev.str && isVowel(getBaseChar(prev.str))){
+    splice(prev.start, caret, cycleMark(prev.str, ACCENT_CYCLE, ACCENT_MARKS));
+  } else {
+    splice(caret, caret, '\u2019'); // elision \u2014 literal apostrophe
+  }
+  clearPending();
+}
+
+// Apply a single diacritic (from an on-screen button) to the vowel/rho left of the caret.
+function applyMarkAtCaret(code){
+  inp.focus();
+  var caret = inp.selectionStart;
+  var prev = prevGrapheme(inp.value, caret);
+  if(!prev.str) return;
+  var base = getBaseChar(prev.str);
+  var ok = (code === 0x0314 || code === 0x0313) ? isVowelOrRho(base) : isVowel(base);
+  if(!ok) return;
+  splice(prev.start, caret, addDiacritical(prev.str, code));
+  clearPending();
+  normalizeSigma();
 }
 
 function processChar(ch){
@@ -480,6 +565,9 @@ function processChar(ch){
   if(caret !== selEnd){ splice(caret, selEnd, ''); clearPending(); caret = inp.selectionStart; }
 
   if(ch === 'h' || ch === 'H'){ handleH(); return; }
+
+  // accent shortcut: ' or curly ' \u2014 cycle acute/grave (or literal apostrophe for elision)
+  if(ch === "'" || ch === '\u2019'){ handleApostrophe(); return; }
 
   // diacritical modifier \u2014 applies to the vowel (or vowel/rho) left of the caret
   if(diacritMap[ch] !== undefined){
@@ -498,9 +586,10 @@ function processChar(ch){
   if(latinToGreek[ch]){
     var g = latinToGreek[ch];
     var v = inp.value;
-    // an eligible vowel/rho consumes an armed dash \u2192 rough breathing
+    // an eligible vowel/rho consumes an armed dash \u2192 rough or smooth breathing
     if(pendingDashIndex >= 0 && pendingDashIndex === caret - 1 && v[pendingDashIndex] === '-' && isVowelOrRho(getBaseChar(g))){
-      splice(pendingDashIndex, pendingDashIndex + 1, addDiacritical(g, 0x0314));
+      var br = (pendingBreathing === 'smooth') ? 0x0313 : 0x0314;
+      splice(pendingDashIndex, pendingDashIndex + 1, addDiacritical(g, br));
       clearPending();
       return;
     }
