@@ -601,29 +601,107 @@ a.logos-btn { text-decoration:none; }
 
 function convert(input) {
   if (!input) return '';
-  const s = String(input).toLowerCase().trim().replace(/\s+/g, '');
+  const s = String(input).toLowerCase().replace(/\s+/g, '');
+  if (!s) return '';
   const singles = {
     a:'α', b:'β', g:'γ', d:'δ', e:'ε', z:'ζ', j:'η', i:'ι', k:'κ', l:'λ',
     m:'μ', n:'ν', x:'ξ', o:'ο', p:'π', r:'ρ', s:'σ', t:'τ', u:'υ', f:'φ',
     c:'χ', w:'ω', y:'ψ'
   };
   const digraphs = { th:'θ', ph:'φ', kh:'χ', ps:'ψ' };
-  const roughs = { a:'ἁ', e:'ἑ', i:'ἱ', o:'ὁ', u:'ὑ', j:'ἡ', w:'ὡ' };
-  let out = '';
+
+  // Combining diacritics (typed Latin → mark). skeleton() strips these before
+  // matching, so accents/breathing only ever affect the rendered preview.
+  const ACUTE=0x0301, GRAVE=0x0300, CIRC=0x0342, ROUGH=0x0314, SMOOTH=0x0313, SUB=0x0345, DIAER=0x0308;
+  const accentKey = { '/':ACUTE, '`':GRAVE, '\\':GRAVE, '~':CIRC, '=':CIRC, '|':SUB, ':':DIAER };
+  const ACC = [ACUTE, GRAVE, CIRC], BR = [ROUGH, SMOOTH];
+  // apostrophe cycles the accent (Lexilogos): ' = acute, '' = grave, ''' = none
+  const nextAccent = (cur) => cur === ACUTE ? GRAVE : cur === GRAVE ? null : ACUTE;
+  const cycleAccent = (marks) => {
+    const base = marks.filter((c) => ACC.indexOf(c) < 0);
+    const nx = nextAccent(marks.find((c) => ACC.indexOf(c) >= 0));
+    return nx == null ? base : base.concat(nx);
+  };
+  const VOWELS = 'αεηιουω';
+  const isV = (g) => VOWELS.indexOf(g) >= 0;
+  // canonical mark order so NFC precomposes (ἕ, ὕ, ῖ): breathing/diaeresis, accent, iota-subscript
+  const ord = (c) => (c===ROUGH||c===SMOOTH||c===DIAER) ? 1 : (c===ACUTE||c===GRAVE||c===CIRC) ? 2 : 3;
+  const addMark = (marks, code) => {
+    let m = ACC.indexOf(code) >= 0 ? marks.filter((c) => ACC.indexOf(c) < 0)
+          : BR.indexOf(code)  >= 0 ? marks.filter((c) => BR.indexOf(c)  < 0) : marks.slice();
+    if (m.indexOf(code) < 0) m.push(code);
+    return m;
+  };
+  const compose = (base, marks) =>
+    (base + marks.slice().sort((a, b) => ord(a) - ord(b)).map((c) => String.fromCharCode(c)).join('')).normalize('NFC');
+
+  const toks = [];            // { g, vowel, marks:[] }
+  let pendingAccent = null;   // accent typed with no preceding vowel → applies to the next vowel
+  let wordBreathing = null;   // leading h/hh breathing, awaiting its vowel
+  let firstVowelSeen = false;
   let i = 0;
+
+  // leading breathing: word-initial h (rough) / hh (smooth) before a vowel
+  const lead = /^h+/.exec(s);
+  if (lead && isV(singles[s[lead[0].length]] || '')) {
+    wordBreathing = lead[0].length >= 2 ? SMOOTH : ROUGH;
+    i = lead[0].length;
+  }
+
   while (i < s.length) {
     const one = s[i], two = s.slice(i, i+2);
-    // h-prefix breathing
-    if (one === 'h' && roughs[s[i+1]]) { out += roughs[s[i+1]]; i += 2; continue; }
-    // h-suffix breathing (vowel + h)
-    if (roughs[one] && s[i+1] === 'h') { out += roughs[one]; i += 2; continue; }
-    if (digraphs[two]) { out += digraphs[two]; i += 2; continue; }
-    if (singles[one]) { out += singles[one]; i++; continue; }
-    out += one; i++;
+    // apostrophe → cycle the preceding vowel's accent (acute → grave → none), else queue acute
+    if (one === "'" || one === '’') {
+      const prev = toks[toks.length - 1];
+      if (prev && prev.vowel) prev.marks = cycleAccent(prev.marks);
+      else pendingAccent = nextAccent(pendingAccent);
+      i++; continue;
+    }
+    // diacritic modifier → preceding vowel if eligible, else queue for the next vowel
+    if (accentKey[one] !== undefined) {
+      const prev = toks[toks.length - 1];
+      if (prev && prev.vowel) prev.marks = addMark(prev.marks, accentKey[one]);
+      else pendingAccent = accentKey[one];
+      i++; continue;
+    }
+    // suffix breathing: vowel+h (ἁ) or word-initial ρ+h (ῥ)
+    if (one === 'h') {
+      const prev = toks[toks.length - 1];
+      if (prev && (prev.vowel || prev.g === 'ρ')) prev.marks = addMark(prev.marks, ROUGH);
+      i++; continue;
+    }
+
+    let g, adv = 1;
+    if (digraphs[two]) { g = digraphs[two]; adv = 2; }
+    else if (singles[one]) { g = singles[one]; }
+    else { toks.push({ g: one, vowel: false, marks: [] }); i++; continue; }
+
+    const vowel = isV(g);
+    const tok = { g, vowel, marks: [] };
+    if (vowel) {
+      if (pendingAccent != null) { tok.marks = addMark(tok.marks, pendingAccent); pendingAccent = null; }
+      if (wordBreathing != null) {
+        const nextG = digraphs[s.slice(i+adv, i+adv+2)] || singles[s[i+adv]] || '';
+        const diph = !firstVowelSeen && 'αεηου'.indexOf(g) >= 0 && (nextG === 'ι' || nextG === 'υ');
+        if (firstVowelSeen || !diph) {        // single vowel, or the 2nd vowel of an initial diphthong
+          tok.marks = addMark(tok.marks, wordBreathing);
+          wordBreathing = null;
+        }
+        // first vowel of a diphthong: leave the breathing for the next vowel
+      }
+      firstVowelSeen = true;
+    }
+    toks.push(tok);
+    i += adv;
   }
-  // final sigma
-  out = out.replace(/σ$/, 'ς');
-  return out;
+  // breathing that never met its diphthong partner → put it on the first vowel
+  if (wordBreathing != null) {
+    const fv = toks.find((t) => t.vowel);
+    if (fv) fv.marks = addMark(fv.marks, wordBreathing);
+  }
+
+  const out = toks.map((t) => t.marks.length ? compose(t.g, t.marks) : t.g).join('');
+  return out.replace(/σ$/, 'ς');
 }
 
 function skeleton(s) {
