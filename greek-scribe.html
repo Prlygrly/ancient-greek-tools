@@ -4,20 +4,64 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>ΓΡΑΦΕΥΣ — Greek Scribe</title>
+  <script>
+    // Apply the saved theme before paint to avoid a flash. Shared key across all the Greek tools.
+    try {
+      var t = localStorage.getItem('greek-plan-theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      else if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } catch (e) {}
+  </script>
   <style>
     * { box-sizing: border-box; }
 
+    /* Light theme (default) — warm parchment, aligned with the rest of the Greek tools.
+       Variable names are kept from the original so the rest of the CSS is unchanged;
+       only their values switch per theme. Gold is kept as the ΓΡΑΦΕΥΣ brand accent. */
     :root {
-      --bg: #2a1f15;
-      --bg-deep: #1a120a;
-      --parchment: #efdfb4;
-      --parchment-shadow: #c7b481;
-      --ink: #4a2e15;
+      --bg: #f5f0e8;
+      --bg-deep: #e7ddca;
+      --parchment: #efdfb4;        /* scroll surface — warm parchment in light mode */
+      --parchment-deep: #e6d29a;   /* scroll gradient bottom */
+      --parchment-shadow: #cdb88a;
+      --ink: #4a2e15;              /* text on the parchment */
       --ink-light: #7a5230;
-      --gold: #d9b04a;
+      --ink-faint: #8a7a68;
+      --ui-text: #4a3a28;         /* chrome text on the page (counters, hint) */
+      --gold: #a8842c;            /* deeper gold so it reads on the cream page */
+      --quill-bg: #3d2818;        /* the quill stays a dark object in both themes */
+      --quill-edge: #5c3d24;
+      --on-dark: #f0e6cf;         /* fixed light text for always-dark surfaces (quill, tooltip) */
+      --highlight: #f5e8c2;
+      --correct: #4a7a4e;
+      --chip-bg: rgba(120,80,40,0.10);
+      --chip-bg-strong: rgba(120,80,40,0.20);
+      --track-bg: rgba(0,0,0,0.10);
+      --toggle-bg: #d9cdb9;
+      --toggle-knob: #fff;
+    }
+    [data-theme="dark"] {
+      --bg: #1a1614;
+      --bg-deep: #14110e;
+      --parchment: #221e1a;        /* dark scroll surface, like the transliteration tool's box */
+      --parchment-deep: #1d1915;
+      --parchment-shadow: #2c261f;
+      --ink: #e0d8cc;
+      --ink-light: #b8ac9a;
+      --ink-faint: #887c6c;
+      --ui-text: #e0d8cc;
+      --gold: #d9b04a;            /* bright gold reads well on the dark page */
       --quill-bg: #3d2818;
       --quill-edge: #5c3d24;
-      --highlight: #f5e8c2;
+      --on-dark: #f0e6cf;
+      --highlight: #2e2820;
+      --correct: #7daa82;
+      --chip-bg: rgba(0,0,0,0.35);
+      --chip-bg-strong: rgba(0,0,0,0.55);
+      --track-bg: rgba(255,255,255,0.08);
+      --toggle-bg: #3a332a;
+      --toggle-knob: #e0d8cc;
     }
 
     body {
@@ -26,7 +70,7 @@
       background:
         radial-gradient(ellipse at top, var(--bg) 0%, var(--bg-deep) 100%);
       font-family: 'Gentium Plus', 'Gentium Book Basic', 'Cardo', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
-      color: var(--parchment);
+      color: var(--ui-text);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -58,7 +102,7 @@
       font-size: 1rem;
     }
     .counter {
-      background: rgba(0,0,0,0.35);
+      background: var(--chip-bg);
       padding: 0.35rem 0.8rem;
       border-radius: 0.4rem;
     }
@@ -74,7 +118,7 @@
       flex: 1 1 auto;
       min-height: 60vh;
       background:
-        linear-gradient(180deg, var(--parchment) 0%, #e6d29a 100%);
+        linear-gradient(180deg, var(--parchment) 0%, var(--parchment-deep) 100%);
       color: var(--ink);
       border-radius: 0.5rem;
       padding: 2rem 2.4rem;
@@ -144,7 +188,7 @@
       width: 100%;
       max-width: 320px;
       height: 6px;
-      background: rgba(255,255,255,0.08);
+      background: var(--track-bg);
       border-radius: 3px;
       overflow: hidden;
       opacity: 0;
@@ -164,7 +208,7 @@
       border-radius: 50%;
       background:
         radial-gradient(circle at 35% 30%, var(--quill-edge), var(--quill-bg) 70%);
-      color: var(--parchment);
+      color: var(--on-dark);
       border: 3px solid var(--gold);
       font-family: inherit;
       font-size: 3.4rem;
@@ -239,7 +283,7 @@
     .progress-slot.filled  { animation: revealLetter 350ms ease-out; }
     .progress-slot.skipped { color: var(--ink-light); opacity: 0.75; font-style: italic; }
     .quiz-progress.success .progress-slot {
-      color: #2d6a3a;
+      color: var(--correct);
       animation: pulse 0.5s ease-out;
     }
 
@@ -320,7 +364,7 @@
     .hg-char.skipped   { color: var(--ink-light); opacity: 0.75; font-style: italic; }
     .hg-char.revealed  { animation: revealLetter 360ms ease-out; }
     @keyframes revealLetter {
-      0%   { transform: scale(1.55) translateY(-2px); color: #6a4a18; }
+      0%   { transform: scale(1.55) translateY(-2px); color: var(--gold); }
       100% { transform: scale(1)    translateY(0);    color: var(--ink); }
     }
 
@@ -349,7 +393,7 @@
     .hg-key:active:not(:disabled) { transform: scale(0.93); }
     .hg-key.used { cursor: default; }
     .hg-key.miss { background: rgba(180, 60, 40, 0.22); opacity: 0.5; }
-    .hg-key.hit  { background: rgba(60, 130, 60, 0.18); border-color: #2d6a3a; opacity: 0.7; }
+    .hg-key.hit  { background: rgba(60, 130, 60, 0.18); border-color: var(--correct); opacity: 0.7; }
     @keyframes pulse {
       0%, 100% { transform: scale(1); }
       50%      { transform: scale(1.15); }
@@ -400,12 +444,47 @@
     }
     .home-link:hover { opacity: 1; }
 
+    /* Theme toggle — sits inline in the top bar (shared visual language with the other tools) */
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      align-self: center;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .toggle-track {
+      width: 44px; height: 24px;
+      background: var(--toggle-bg);
+      border-radius: 12px;
+      position: relative;
+      transition: background 0.35s;
+    }
+    .toggle-knob {
+      width: 18px; height: 18px;
+      background: var(--toggle-knob);
+      border-radius: 50%;
+      position: absolute; top: 3px; left: 3px;
+      transition: transform 0.35s, background 0.35s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .toggle-icon {
+      position: absolute; top: 4px;
+      font-size: 12px; line-height: 1;
+      transition: opacity 0.25s;
+    }
+    .toggle-icon.sun  { right: 5px; opacity: 1; }
+    .toggle-icon.moon { left: 5px;  opacity: 0; }
+    [data-theme="dark"] .toggle-knob { transform: translateX(20px); }
+    [data-theme="dark"] .toggle-icon.sun  { opacity: 0; }
+    [data-theme="dark"] .toggle-icon.moon { opacity: 1; }
+
     .word-tooltip {
       position: fixed;
       top: 0;
       left: 0;
       background: rgba(35, 22, 8, 0.96);
-      color: var(--parchment);
+      color: var(--on-dark);
       padding: 0.35rem 0.75rem;
       border-radius: 0.4rem;
       font-size: 0.95rem;
@@ -434,7 +513,7 @@
     }
     .welcome-overlay.hidden { display: none; }
     .welcome-box {
-      background: linear-gradient(180deg, var(--parchment), #e6d29a);
+      background: linear-gradient(180deg, var(--parchment), var(--parchment-deep));
       color: var(--ink);
       border-radius: 0.8rem;
       padding: 2rem 1.8rem;
@@ -447,7 +526,7 @@
     .welcome-title {
       font-size: 2.2rem;
       letter-spacing: 0.2em;
-      color: var(--quill-bg);
+      color: var(--gold);
       margin: 0 0 0.6rem;
     }
     .welcome-text { font-size: 1.05rem; margin: 0.3rem 0; }
@@ -455,7 +534,7 @@
     .welcome-choices { display: flex; flex-direction: column; gap: 0.8rem; }
     .welcome-btn {
       background: var(--quill-bg);
-      color: var(--parchment);
+      color: var(--on-dark);
       border: 2px solid var(--gold);
       border-radius: 0.5rem;
       padding: 0.9rem 1rem;
@@ -473,7 +552,7 @@
 
     /* Settings */
     .settings-btn {
-      background: rgba(0,0,0,0.35);
+      background: var(--chip-bg);
       border: none;
       color: var(--gold);
       font-size: 1.1rem;
@@ -483,7 +562,7 @@
       font-family: inherit;
       transition: background 200ms;
     }
-    .settings-btn:hover { background: rgba(0,0,0,0.55); }
+    .settings-btn:hover { background: var(--chip-bg-strong); }
 
     .settings-overlay {
       position: fixed;
@@ -497,7 +576,7 @@
     }
     .settings-overlay.hidden { display: none; }
     .settings-box {
-      background: linear-gradient(180deg, var(--parchment), #e6d29a);
+      background: linear-gradient(180deg, var(--parchment), var(--parchment-deep));
       color: var(--ink);
       border-radius: 0.8rem;
       padding: 1.6rem;
@@ -512,11 +591,11 @@
       margin: 0 0 1rem;
       font-size: 1.4rem;
       letter-spacing: 0.1em;
-      color: var(--quill-bg);
+      color: var(--ink);
       text-align: center;
     }
     .settings-packs { display: flex; flex-direction: column; gap: 0.7rem; }
-    .settings-divider { border: none; border-top: 1px solid rgba(74,46,21,0.25); margin: 1rem 0; }
+    .settings-divider { border: none; border-top: 1px solid var(--parchment-shadow); margin: 1rem 0; }
     .settings-pack {
       display: flex;
       align-items: flex-start;
@@ -553,9 +632,108 @@
     }
     .settings-close {
       background: var(--quill-bg);
-      color: var(--parchment);
+      color: var(--on-dark);
       border: 2px solid var(--gold);
     }
+
+    /* User-pack remove button — only shown on uploaded packs in the settings list. */
+    .pack-remove {
+      margin-left: auto;
+      align-self: center;
+      flex-shrink: 0;
+      background: transparent;
+      border: 1px solid var(--ink-light);
+      color: var(--ink-light);
+      border-radius: 0.35rem;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 200ms, color 200ms, border-color 200ms;
+    }
+    .pack-remove:hover {
+      color: var(--ink);
+      border-color: var(--ink);
+      background: rgba(180, 60, 40, 0.18);
+    }
+
+    /* Import-pack overlay — sits above the settings overlay. Reuses the parchment box look. */
+    .import-overlay {
+      position: fixed; inset: 0;
+      background: rgba(20, 14, 8, 0.92);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 410;
+      padding: 1rem;
+    }
+    .import-overlay.hidden { display: none; }
+    .import-box {
+      background: linear-gradient(180deg, var(--parchment), var(--parchment-deep));
+      color: var(--ink);
+      border-radius: 0.8rem;
+      padding: 1.6rem;
+      max-width: 640px;
+      width: 100%;
+      box-shadow: 0 1.5rem 3rem rgba(0,0,0,0.6);
+      border: 2px solid var(--gold);
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    .import-help {
+      font-size: 0.88rem;
+      color: var(--ink-light);
+      margin: 0 0 0.7rem;
+      line-height: 1.5;
+    }
+    .import-help code {
+      background: rgba(60,30,10,0.10);
+      padding: 0 0.3em;
+      border-radius: 0.25rem;
+      font-size: 0.92em;
+    }
+    .import-textarea {
+      width: 100%;
+      min-height: 220px;
+      font-family: 'Gentium Plus', 'Cardo', 'Palatino Linotype', Georgia, serif;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      padding: 0.6rem 0.8rem;
+      background: var(--highlight);
+      color: var(--ink);
+      border: 1.5px solid var(--parchment-shadow);
+      border-radius: 0.45rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color 200ms;
+    }
+    .import-textarea:focus { border-color: var(--gold); }
+    .import-status {
+      font-size: 0.9rem;
+      margin: 0.7rem 0 0;
+      min-height: 1.2em;
+      line-height: 1.5;
+    }
+    .import-status .ok   { color: var(--correct); }
+    .import-status .err  { color: #a83030; }
+    .import-status .warn { color: var(--gold); }
+    .import-status b { font-weight: 700; }
+    .import-actions {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-top: 0.9rem;
+    }
+    /* Template download is a "get started" helper — sit it apart, on the left. */
+    .import-template-btn { margin-right: auto; }
+    .import-actions button {
+      padding: 0.55rem 1rem;
+      border-radius: 0.45rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 80ms ease;
+    }
+    .import-actions button:active { transform: scale(0.97); }
   </style>
 </head>
 <body>
@@ -586,6 +764,13 @@
       <div class="counter">λέξεις   <span class="counter-value" id="words">0</span></div>
       <div class="counter">✓ <span class="counter-value" id="passed">0</span></div>
       <button class="settings-btn" id="settings-btn" type="button" aria-label="settings">⚙</button>
+      <div class="theme-toggle" id="theme-toggle" role="button" tabindex="0" aria-label="Toggle dark mode">
+        <div class="toggle-track">
+          <span class="toggle-icon sun">&#9788;</span>
+          <span class="toggle-icon moon">&#9790;</span>
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -603,7 +788,24 @@
       </label>
       <div class="settings-actions">
         <button class="settings-reset" id="settings-reset" type="button">Start over</button>
+        <button class="settings-reset" id="settings-import-open" type="button">Add a pack</button>
         <button class="settings-close" id="settings-close" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="import-overlay hidden" id="import-overlay">
+    <div class="import-box">
+      <h2 class="settings-title">Add a pack</h2>
+      <p class="import-help">Paste a pack here, or load from a file. Markdown with <code>*…*</code> endings, <code>**Pair**</code> labels, and a <code>## Glossary</code>. New here? <b>Download the template</b> below — it has a worked example and explains every symbol. Words you don't gloss are still written — they just won't flash or be quizzed.</p>
+      <textarea class="import-textarea" id="import-text" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder="Paste the pack's Markdown here…"></textarea>
+      <input type="file" id="import-file" accept=".md,.txt,text/markdown,text/plain" style="display:none">
+      <div class="import-status" id="import-status"></div>
+      <div class="import-actions">
+        <button class="settings-reset import-template-btn" id="import-template" type="button">↓ Download template</button>
+        <button class="settings-reset" id="import-cancel" type="button">Cancel</button>
+        <button class="settings-reset" id="import-from-file" type="button">From file…</button>
+        <button class="settings-close" id="import-load" type="button">Load pack</button>
       </div>
     </div>
   </div>
@@ -621,206 +823,65 @@
 
   <div class="hint" id="hint">Click the quill to write the next letter · Hover a finished word for its meaning</div>
 
+  <script src="greek-scribe-packs.js"></script>
   <script>
     (function () {
-      const PACKS = {
-        'logos-basics': {
-          name: 'Λόγος αʹ — Βασικά',
-          description: 'Basic vocabulary: people, animals, household items, nature',
-          dialect: 'attic',
-          words: {
-            // function / abstract
-            'ἐστιν':    { en: 'is',                      emoji: null },
-            'ἐστι':     { en: 'is',                      emoji: null },
-            'οὐκ':      { en: 'not',                     emoji: '🚫' },
-            // adjectives (gender-agreeing forms)
-            'καλός':    { en: 'good, beautiful (m.)',    emoji: '👍', noQuiz: true },
-            'καλή':     { en: 'good, beautiful (f.)',    emoji: '👍', noQuiz: true },
-            'καλόν':    { en: 'good, beautiful (n.)',    emoji: '👍', noQuiz: true },
-            'κακός':    { en: 'bad (m.)',                emoji: '👎', noQuiz: true },
-            'κακή':     { en: 'bad (f.)',                emoji: '👎', noQuiz: true },
-            'κακόν':    { en: 'bad (n.)',                emoji: '👎', noQuiz: true },
-            // nouns — people
-            'ἄνθρωπος': { en: 'person, human',           emoji: '🧑' },
-            'ἀνήρ':     { en: 'man',                     emoji: '👨' },
-            'γυνή':     { en: 'woman',                   emoji: '👩' },
-            'γέρων':    { en: 'old man',                 emoji: '👴' },
-            'παιδίον':  { en: 'little child',            emoji: '👶' },
-            // nouns — places and things
-            'οἷκος':    { en: 'family, household',       emoji: '👨👩👶' },
-            'οἰκία':    { en: 'house',                   emoji: '🏠' },
-            'ναός':     { en: 'temple',                  emoji: '🏛️' },
-            'νῆσος':    { en: 'island',                  emoji: '🏝️' },
-            'ὁδός':     { en: 'road, path, way',         emoji: '👣🛤️' },
-            'γῆ':       { en: 'earth, ground, land',     emoji: '🟫' },
-            'κλίνη':    { en: 'couch, bed',              emoji: '🛏️' },
-            'βιβλίον':  { en: 'book, scroll',            emoji: '📜' },
-            'νόμισμα':  { en: 'coin, money',             emoji: '🪙💰' },
-            'λίθος':    { en: 'stone',                   emoji: '🪨' },
-            // nouns — animals
-            'ἵππος':    { en: 'horse',                   emoji: '🐎' },
-            'λέων':     { en: 'lion',                    emoji: '🦁' },
-            'καρχαρίας':{ en: 'shark',                   emoji: '🦈' },
-            // nouns — nature
-            'σελήνη':   { en: 'moon',                    emoji: '🌙' },
-            'ἄστρον':   { en: 'star',                    emoji: '⭐' },
-            'ἄνθος':    { en: 'flower',                  emoji: '🌸' },
-            'πῦρ':      { en: 'fire',                    emoji: '🔥' },
-            'ὕδωρ':     { en: 'water',                   emoji: '💧' }
-          },
-          sentences: [
-            'ἀνήρ καλός ἐστιν',
-            'γυνή καλή ἐστιν',
-            'ἵππος καλός ἐστιν',
-            'λέων καλός ἐστιν',
-            'οἷκος καλός ἐστιν',
-            'οἰκία καλή ἐστιν',
-            'ναός καλός ἐστιν',
-            'σελήνη καλή ἐστιν',
-            'ἄστρον καλόν ἐστιν',
-            'ἄνθος καλόν ἐστιν',
-            'πῦρ κακόν ἐστιν',
-            'ὕδωρ καλόν ἐστιν',
-            'βιβλίον καλόν ἐστιν',
-            'νῆσος καλή ἐστιν',
-            'παιδίον καλόν ἐστιν',
-            'λέων κακός οὐκ ἐστιν',
-            'καρχαρίας κακός ἐστιν',
-            'γέρων καλός ἐστιν'
-          ]
-        },
+      const PACKS = { ...window.BUILTIN_PACKS };
 
-        'greek-gods': {
-          name: 'Ἕλληνες θεοί',
-          description: 'Greek gods: Apollo, Athena, Zeus, Hephaestus, Hermes',
-          dialect: 'attic',
-          words: {
-            'Ἀπόλλων':  { en: 'Apollo',     emoji: '🏹☀️' },
-            'Ἀθηνᾶ':   { en: 'Athena',     emoji: '🦉🛡️' },
-            'Ζεύς':     { en: 'Zeus',       emoji: '⚡' },
-            'Ἥφαιστος': { en: 'Hephaestus', emoji: '⚒️🔥' },
-            'Ἑρμῆς':    { en: 'Hermes',     emoji: '🪶⚕️' },
-            'θεός':     { en: 'a god',      emoji: 'a god' },
-            'θεά':      { en: 'a goddess',  emoji: 'a goddess' }
-          },
-          sentences: [
-            'Ἀπόλλων θεός ἐστιν',
-            'Ζεύς θεός ἐστιν',
-            'Ἥφαιστος θεός ἐστιν',
-            'Ἑρμῆς θεός ἐστιν',
-            'Ἀθηνᾶ θεά ἐστιν'
-          ]
-        },
+      // --- User-uploaded packs (Markdown asterisk format; see greek-scribe-pack-template.md) ---
+      // Loaded from localStorage and merged into PACKS before the saved config is read,
+      // so a saved activePackIds that references a user pack still resolves on reload.
+      const USER_PACKS_KEY   = 'greek-scribe.v1.userPacks';
+      const BUILTIN_PACK_IDS = ['logos-basics', 'greek-gods', 'koine-foundations'];
 
-        'koine-foundations': {
-          name: 'Κοινή αʹ',
-          description: 'Koine starter: high-frequency NT vocabulary and biblical phrases',
-          dialect: 'koine',
-          words: {
-            // articles
-            'ὁ':       { en: 'the (m.)',           emoji: null },
-            'ἡ':       { en: 'the (f.)',           emoji: null },
-            'τό':      { en: 'the (n.)',           emoji: null },
-            'τοῦ':     { en: 'of the (m./n.)',     emoji: null },
-            'τῷ':      { en: 'to/in the (m./n.)',  emoji: null },
-            'τὸν':     { en: 'the (m. acc.)',      emoji: null },
-            // conjunctions / particles / prepositions
-            'καί':     { en: 'and, also',          emoji: null },
-            'καὶ':     { en: 'and, also',          emoji: null },
-            'δέ':      { en: 'but, and',           emoji: null },
-            'οὐ':      { en: 'not',                emoji: '🚫' },
-            'οὐκ':     { en: 'not',                emoji: '🚫' },
-            'οὐχ':     { en: 'not',                emoji: '🚫' },
-            'ἐν':      { en: 'in',                 emoji: null },
-            'εἰς':     { en: 'into, to',           emoji: null },
-            'πρός':    { en: 'to, toward, with',   emoji: null },
-            // pronouns
-            'ἐγώ':     { en: 'I',                  emoji: '👤' },
-            'ἐγὼ':     { en: 'I',                  emoji: '👤' },
-            // being / function
-            'ἐστιν':   { en: 'is',                 emoji: null },
-            'ἐστι':    { en: 'is',                 emoji: null },
-            'ἦν':      { en: 'was',                emoji: null },
-            // nouns + inflected forms
-            'θεός':    { en: 'God',                emoji: 'God' },
-            'θεὸς':    { en: 'God',                emoji: 'God' },
-            'θεοῦ':    { en: 'of God',             emoji: 'God' },
-            'κύριος':  { en: 'Lord',               emoji: '👑' },
-            'κυρίου':  { en: 'of the Lord',        emoji: '👑' },
-            'λόγος':   { en: 'word',               emoji: '💬' },
-            'λόγον':   { en: 'word (acc.)',        emoji: '💬' },
-            'ἄνθρωπος':{ en: 'human, man',         emoji: '🧑' },
-            'ἀνθρώπου':{ en: 'of a person',        emoji: '🧑' },
-            'υἱός':    { en: 'son',                emoji: '👨👦⬅️' },
-            'υἱὸς':    { en: 'son',                emoji: '👨👦⬅️' },
-            'ἀδελφός': { en: 'brother',            emoji: '👬' },
-            'ἀδελφὸς': { en: 'brother',            emoji: '👬' },
-            'ἀδελφοὶ': { en: 'brothers',           emoji: '👬' },
-            'ἀδελφῷ':  { en: 'to/for the brother', emoji: '👬' },
-            'ἄγγελος': { en: 'angel, messenger',   emoji: '👼' },
-            'ἀπόστολος':{ en: 'apostle',           emoji: '📣' },
-            'κόσμος':  { en: 'world',              emoji: '🌍' },
-            'οὐρανός': { en: 'heaven',             emoji: '☁️✨' },
-            'οὐρανῷ':  { en: 'in heaven',          emoji: '☁️✨' },
-            'Ἰησοῦς':  { en: 'Jesus',              emoji: '✝️' },
-            'Χριστός': { en: 'Christ, Messiah',    emoji: '🫒👑' },
-            'Χριστὸς': { en: 'Christ, Messiah',    emoji: '🫒👑' },
-            'Χριστῷ':  { en: 'in Christ',          emoji: '🫒👑' },
-            'Χριστόν': { en: 'Christ (acc.)',      emoji: '🫒👑' },
-            'ἀγάπη':   { en: 'love',               emoji: '❤️' },
-            'ζωή':     { en: 'life',               emoji: '🌱' },
-            'ζωήν':    { en: 'life (acc.)',        emoji: '🌱' },
-            'ἀρχή':    { en: 'beginning',          emoji: '🌅' },
-            'ἀρχῇ':    { en: 'beginning (dat.)',   emoji: '🌅' },
-            // verbs
-            'λέγω':    { en: 'I say, speak',       emoji: '🗣️' },
-            'ἀκούω':   { en: 'I hear',             emoji: '👂' },
-            'ἀκούει':  { en: 'he/she hears',       emoji: '👂' },
-            'πιστεύω': { en: 'I believe',          emoji: '🙏' },
-            'ἔχω':     { en: 'I have',             emoji: '🤲🪙' },
-            // adjectives
-            'ἀγαθός':  { en: 'good',               emoji: '👍' },
-            'ἅγιος':   { en: 'holy',               emoji: '😇' },
-            'ἁγία':    { en: 'holy (f.)',          emoji: '😇' },
-            'ἅγιον':   { en: 'holy (n.)',          emoji: '😇' }
-          },
-          sentences: [
-            'ἐν ἀρχῇ ἦν ὁ λόγος',
-            'ὁ θεὸς ἀγάπη',
-            'ὁ θεὸς ἀγαθός',
-            'ἅγιος ὁ θεός',
-            'Ἰησοῦς Χριστός υἱὸς θεοῦ',
-            'Ἰησοῦς ἐστιν ὁ υἱὸς τοῦ ἀνθρώπου',
-            'ὁ ἄγγελος κυρίου ἅγιος',
-            'ὁ ἀδελφὸς ἐν Χριστῷ',
-            'ὁ κύριος ἐν οὐρανῷ',
-            'ἀκούω τὸν λόγον',
-            'πιστεύω εἰς Χριστόν',
-            'ἔχω ζωήν',
-            'λέγω τῷ ἀδελφῷ',
-            'ἐγὼ ἀκούω καὶ ὁ ἀδελφὸς ἀκούει',
-            'οὐκ ἀκούω'
-          ]
-        }
-      };
+      function loadUserPacks() {
+        try {
+          const raw = localStorage.getItem(USER_PACKS_KEY);
+          const arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr) ? arr : [];
+        } catch (e) { return []; }
+      }
+      function saveUserPacksList(arr) {
+        try { localStorage.setItem(USER_PACKS_KEY, JSON.stringify(arr)); } catch (e) {}
+      }
+      function hydrateUserPacks() {
+        loadUserPacks().forEach(p => {
+          if (p && p.id && !BUILTIN_PACK_IDS.includes(p.id)) PACKS[p.id] = p;
+        });
+      }
+      hydrateUserPacks();
 
-      // Active pack ids — for Step 1 all packs are active. Step 3 will hook this up to user choice.
+      // Active pack ids — built-ins are the starting set; the welcome screen narrows to one
+      // dialect, and saved configs / the ⚙ list can add/remove from here at runtime.
       let activePackIds = ['logos-basics', 'greek-gods', 'koine-foundations'];
 
       let WORDS = {};
-      let SENTENCES = [];
+      // Units: array of { type:'single'|'pair'|'group'|'paragraph', lines:[…], requires:[…] }.
+      // Built-in packs (which only have `sentences: [...]`) are wrapped one-line-per-unit on the fly.
+      let UNITS = [];
 
       function rebuildPool() {
         WORDS = {};
-        SENTENCES = [];
+        UNITS = [];
         activePackIds.forEach(id => {
           const pack = PACKS[id];
           if (!pack) return;
           Object.assign(WORDS, pack.words);
-          SENTENCES.push(...pack.sentences);
+          if (Array.isArray(pack.units) && pack.units.length) {
+            pack.units.forEach(u => UNITS.push(u));
+          } else if (Array.isArray(pack.sentences)) {
+            // Back-compat: each built-in sentence becomes its own single-line unit.
+            pack.sentences.forEach(s => UNITS.push({ type: 'single', lines: [s], requires: [] }));
+          }
         });
+        // Callers reset `sentenceQueue` themselves — at module load this function runs before
+        // `let sentenceQueue` has been declared, so touching it here would throw on init.
       }
       rebuildPool();
+
+      // Flatten all currently-pooled units into a plain sentence list. Used where a flat
+      // pool is the natural shape (e.g. the hangman draw in quiz-only mode).
+      function flatSentences() { return UNITS.flatMap(u => u.lines); }
 
       // Set which packs are active, rebuild the pool, and reset the sentence queue
       // so the next sentence is drawn from the new selection.
@@ -836,8 +897,13 @@
       //   scribeSetPacks(['logos-basics','greek-gods']) → Attic only
       //   scribeListPacks()                          → see available pack ids
       window.scribeSetPacks  = (ids) => { setActivePacks(ids); return activePackIds; };
-      window.scribeListPacks = () => Object.keys(PACKS).map(id =>
-        ({ id, name: PACKS[id].name, sentences: PACKS[id].sentences.length }));
+      window.scribeListPacks = () => Object.keys(PACKS).map(id => {
+        const p = PACKS[id];
+        const n = Array.isArray(p.units)
+          ? p.units.reduce((a, u) => a + (u.lines ? u.lines.length : 0), 0)
+          : (Array.isArray(p.sentences) ? p.sentences.length : 0);
+        return { id, name: p.name, sentences: n, kind: BUILTIN_PACK_IDS.includes(id) ? 'built-in' : 'user' };
+      });
 
       const EASY_QUIZ_THRESHOLD = 5;   // quiz every sentence for first N
       const PAIR_QUIZ_SECOND_CHANCE = 0.5;  // after threshold, chance to pick word from earlier sentence
@@ -904,7 +970,14 @@
       function hideSentences() { sentencesEl.style.display = 'none'; }
 
       function startNextSentence() {
-        if (sentenceQueue.length === 0) sentenceQueue = shuffle(SENTENCES);
+        if (sentenceQueue.length === 0) {
+          // Shuffle whole UNITS, then flatten — so pair/group/paragraph lines stay adjacent
+          // in play order. Drop any unit whose `requires` ⊄ the active pack set.
+          const eligible = UNITS.filter(u =>
+            !u.requires || !u.requires.length || u.requires.every(r => activePackIds.includes(r))
+          );
+          sentenceQueue = shuffle(eligible).flatMap(u => u.lines);
+        }
         const sentence = sentenceQueue.shift();
         currentSentenceWords = sentence.split(' ');
         currentWordIndex = 0;
@@ -1228,7 +1301,7 @@
         // (not the most recent); in quiz-only mode draw from the whole active pool.
         let pool;
         if (quizOnlyMode || completedSentences.length === 0) {
-          pool = SENTENCES;
+          pool = flatSentences();
         } else {
           pool = completedSentences.length > 1 ? completedSentences.slice(0, -1) : completedSentences;
         }
@@ -1448,10 +1521,29 @@
           name.textContent = pack.name;
           const desc = document.createElement('span');
           desc.className = 'settings-pack-desc';
-          desc.textContent = pack.description + ' · ' + pack.sentences.length + ' sentences';
+          const sentenceCount = Array.isArray(pack.units)
+            ? pack.units.reduce((a, u) => a + (u.lines ? u.lines.length : 0), 0)
+            : (Array.isArray(pack.sentences) ? pack.sentences.length : 0);
+          desc.textContent = (pack.description || '') + ' · ' + sentenceCount + ' sentences';
           info.append(name, desc);
 
           label.append(cb, info);
+
+          // User-uploaded packs get a remove control.
+          if (!BUILTIN_PACK_IDS.includes(id)) {
+            const rm = document.createElement('button');
+            rm.className = 'pack-remove';
+            rm.type = 'button';
+            rm.textContent = '🗑';
+            rm.title = 'Remove this uploaded pack';
+            rm.setAttribute('aria-label', 'Remove pack ' + pack.name);
+            rm.addEventListener('click', (e) => {
+              e.preventDefault(); e.stopPropagation();
+              removeUserPack(id);
+            });
+            label.appendChild(rm);
+          }
+
           settingsPacks.appendChild(label);
         });
       }
@@ -1490,6 +1582,375 @@
         location.reload();
       });
 
+      // --- Theme toggle (light/dark) — persisted under the shared key so the choice
+      // carries across every Greek tool. Note: theme is separate from STORAGE_KEY,
+      // which only holds packs/quizOnly, so "Start over" never resets the theme. ---
+      const themeToggle = document.getElementById('theme-toggle');
+      function toggleTheme() {
+        const root = document.documentElement;
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('greek-plan-theme', next); } catch (e) {}
+      }
+      themeToggle.addEventListener('click', toggleTheme);
+      themeToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTheme(); }
+      });
+
+      // ═══════════ Pack-import: parser + UI ═══════════
+      // Parses the Markdown asterisk pack format (see greek-scribe-pack-template.md and the
+      // "Modular content packs" section of greek-scribe-design.md) into the same shape the
+      // built-in PACKS use, so the rest of the game stays shape-agnostic.
+
+      function parsePackText(text) {
+        const result = {
+          id: '', name: '', dialect: 'attic', description: '',
+          words: {}, units: [], errors: [], warnings: []
+        };
+        text = String(text || '').replace(/<!--[\s\S]*?-->/g, '');   // strip HTML/Markdown comments
+        const lines = text.split(/\r?\n/);
+
+        // The first H2 (## …) splits front matter from sections.
+        let firstH2 = lines.findIndex(l => /^##\s/.test(l));
+        if (firstH2 < 0) firstH2 = lines.length;
+
+        // 1. Front matter — first H1 → name; key:value lines before the first H2 set metadata.
+        const META_KEYS = ['name', 'id', 'dialect', 'description'];
+        for (let i = 0; i < firstH2; i++) {
+          const l = lines[i];
+          const h1 = l.match(/^#\s+(.+?)\s*$/);
+          if (h1 && !result.name) result.name = h1[1].trim();
+          const kv = l.match(/^([a-z_]+):\s*(.+?)\s*$/);
+          if (kv && META_KEYS.includes(kv[1].toLowerCase())) {
+            result[kv[1].toLowerCase()] = kv[2].trim();
+          }
+        }
+        if (!result.name) result.name = 'Untitled Pack';
+        if (!result.id)   result.id   = slugifyId(result.name);
+
+        // 2. Locate the Glossary section, if any.
+        let glossaryHeaderIdx = -1, glossaryEnd = lines.length;
+        for (let i = firstH2; i < lines.length; i++) {
+          const h2 = lines[i].match(/^##\s+(.+?)\s*$/);
+          if (h2 && /^(glossary|vocabulary|words)\b/i.test(h2[1].trim())) {
+            glossaryHeaderIdx = i;
+            let j = i + 1;
+            for (; j < lines.length; j++) if (/^##\s/.test(lines[j])) break;
+            glossaryEnd = j;
+            break;
+          }
+        }
+
+        // 3. Parse glossary entries into three lookup tables (precedence: exact → stem+ending → stem).
+        const exactWord  = Object.create(null);
+        const stemEnding = Object.create(null);
+        const stemOnly   = Object.create(null);
+        if (glossaryHeaderIdx >= 0) {
+          for (let i = glossaryHeaderIdx + 1; i < glossaryEnd; i++) {
+            const raw = lines[i].trim();
+            if (!raw || raw.startsWith('---') || raw.startsWith('#')) continue;
+            const entry = parseGlossaryLine(raw);
+            if (!entry) continue;
+            if (entry._error) { result.warnings.push(entry._error + ': "' + raw + '"'); continue; }
+            if (entry.type === 'whole' || entry.type === 'wrap')    exactWord[entry.fullword] = entry;
+            else if (entry.type === 'stem+ending') stemEnding[entry.stem + '|' + entry.ending] = entry;
+            else if (entry.type === 'stem')        stemOnly[entry.stem] = entry;
+          }
+        }
+
+        // 4. Walk the sentence sections, building units.
+        let currentLabel = null;   // { type, requires }
+        let currentUnit  = null;   // { type, lines, requires }
+        function flushUnit() {
+          if (currentUnit && currentUnit.lines.length) result.units.push(currentUnit);
+          currentUnit = null;
+        }
+        for (let i = firstH2; i < lines.length; i++) {
+          // Skip the glossary block entirely (header line + body).
+          if (glossaryHeaderIdx >= 0 && i >= glossaryHeaderIdx && i < glossaryEnd) continue;
+          const l = lines[i];
+          const trimmed = l.trim();
+          if (!trimmed) continue;
+          if (/^##\s/.test(l) || /^---+\s*$/.test(trimmed)) {
+            flushUnit(); currentLabel = null; continue;
+          }
+          // Bold unit label: **Pair / Group / Paragraph / Single …**
+          const labelMatch = trimmed.match(/^\*\*\s*(pair|group|paragraph|single)\b([^*]*)\*\*\s*$/i);
+          if (labelMatch) {
+            flushUnit();
+            const type = labelMatch[1].toLowerCase();
+            const reqMatch = (labelMatch[2] || '').match(/requires?\s*:\s*([^)\]]+)/i);
+            const requires = reqMatch ? reqMatch[1].split(/[,\s]+/).filter(Boolean) : [];
+            currentLabel = { type, requires };
+            currentUnit  = (type === 'single') ? null : { type, lines: [], requires };
+            continue;
+          }
+          // Bullet (dash OR asterisk + space → list item).
+          const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+          if (bullet) {
+            const rendered = processSentenceLine(bullet[1].trim(), exactWord, stemEnding, stemOnly, result.words);
+            if (currentLabel && currentLabel.type !== 'single' && currentUnit) {
+              currentUnit.lines.push(rendered);
+            } else {
+              result.units.push({
+                type: 'single', lines: [rendered],
+                requires: (currentLabel && currentLabel.requires) || []
+              });
+            }
+          }
+          // Any other line — prose, malformed, etc. — is silently ignored.
+        }
+        flushUnit();
+
+        // 5. Validate.
+        if (BUILTIN_PACK_IDS.includes(result.id)) {
+          result.errors.push('The id "' + result.id + '" is reserved by a built-in pack. Add an `id:` line with a different value.');
+        }
+        if (!result.units.length) {
+          result.errors.push('No sentences found. Add bulleted lines under a **Pair**, **Group**, **Paragraph**, or **Single** label.');
+        }
+        const quizzable = Object.keys(result.words).filter(w => {
+          const e = result.words[w]; return e.emoji && !e.noQuiz;
+        });
+        if (!quizzable.length && result.units.length) {
+          result.warnings.push('No spell-quizzable words — every glossed word is text-only, [noQuiz] or [proper]. The game will still play; spelling drills will skip.');
+        }
+
+        return result;
+      }
+
+      function slugifyId(s) {
+        return String(s || '')
+          .toLowerCase()
+          .normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+          .slice(0, 60) || ('pack-' + Date.now().toString(36));
+      }
+
+      function parseGlossaryLine(raw) {
+        if (!raw) return null;
+        const eq = raw.indexOf('=');
+        if (eq < 0) return { _error: 'glossary line missing "="' };
+        const keyPart = raw.slice(0, eq).trim();
+        let rest      = raw.slice(eq + 1).trim();
+        // trailing [flags]
+        const flags = [];
+        const fm = rest.match(/\s*\[([^\]]+)\]\s*$/);
+        if (fm) {
+          flags.push(...fm[1].split(/[,\s]+/).filter(Boolean).map(f => f.toLowerCase()));
+          rest = rest.slice(0, fm.index).trim();
+        }
+        // trailing (gloss)
+        let gloss = '';
+        const gm = rest.match(/\s*\(([^)]*)\)\s*$/);
+        if (gm) { gloss = gm[1].trim(); rest = rest.slice(0, gm.index).trim(); }
+        const prompt = rest;   // may be empty (function word)
+
+        // Classify the key by '*' count + position.
+        const k = keyPart;
+        const stars = (k.match(/\*/g) || []).length;
+        let entry;
+        if (stars === 0) {
+          entry = { type: 'whole', key: k, fullword: k };
+        } else if (stars === 2) {
+          const first = k.indexOf('*'), last = k.lastIndexOf('*');
+          if (first === 0 && last === k.length - 1) {
+            const word = k.slice(1, -1);
+            entry = { type: 'wrap', key: k, fullword: word, stem: '', ending: word };
+          } else if (first > 0 && last === k.length - 1) {
+            entry = {
+              type: 'stem+ending', key: k,
+              stem:    k.slice(0, first),
+              ending:  k.slice(first + 1, last),
+              fullword: k.slice(0, first) + k.slice(first + 1, last)
+            };
+          } else {
+            return { _error: 'malformed key (asterisks must wrap the ending)' };
+          }
+        } else if (stars === 1 && k.endsWith('*')) {
+          entry = { type: 'stem', key: k, stem: k.slice(0, -1) };
+        } else {
+          return { _error: 'malformed key (use stem*, stem*ending*, *word*, or a plain word)' };
+        }
+        entry.prompt = prompt;
+        entry.gloss  = gloss;
+        entry.flags  = flags;
+        return entry;
+      }
+
+      function entryToWord(entry, stem, ending) {
+        const prompt = entry.prompt || '';
+        let emoji, en;
+        if (!prompt) {
+          // empty prompt → function word: no flash, no quiz
+          emoji = null;
+          en    = entry.gloss || '';
+        } else if (/^[A-Za-z]/.test(prompt)) {
+          // Latin-leading text — game renders this small + italic via isTextLabel().
+          emoji = prompt;
+          en    = entry.gloss || prompt;
+        } else {
+          // Anything else (one or more emoji glyphs concatenated) used verbatim.
+          emoji = prompt;
+          en    = entry.gloss || prompt;
+        }
+        const w = { en, emoji };
+        if (entry.flags.includes('noquiz') || entry.flags.includes('proper')) w.noQuiz = true;
+        if (entry.flags.includes('proper')) w.proper = true;
+        if (ending) w.endIdx = (stem || '').length;   // for future ΚΑΤΑΛΗΞΙΣ mode
+        return w;
+      }
+
+      function processSentenceLine(line, exactWord, stemEnding, stemOnly, wordsOut) {
+        // Walk the line. Runs of (Unicode letter | combining mark | asterisk) are word tokens;
+        // everything else (whitespace, punctuation) is passed through unchanged so the rendered
+        // sentence keeps its original spacing and punctuation.
+        const isWordCh = ch => /[\p{L}\p{M}*]/u.test(ch);
+        const out = [];
+        let i = 0;
+        while (i < line.length) {
+          if (!isWordCh(line[i])) { out.push(line[i]); i++; continue; }
+          let j = i;
+          while (j < line.length && isWordCh(line[j])) j++;
+          const tok = line.slice(i, j);
+          const stripped  = tok.replace(/\*/g, '');
+          const starCount = (tok.match(/\*/g) || []).length;
+          let stem = '', ending = '';
+          if (starCount >= 2) {
+            const f = tok.indexOf('*'), lst = tok.lastIndexOf('*');
+            stem   = tok.slice(0, f);
+            ending = tok.slice(f + 1, lst);
+          }
+          // Most-specific match first; fall through to undefined (handled at runtime).
+          const entry = exactWord[stripped]
+                     || (stem && ending && stemEnding[stem + '|' + ending])
+                     || (stem && stemOnly[stem])
+                     || null;
+          // Only emit a word entry if the glossary actually resolved it. Undefined tokens fall
+          // through to other active packs / the game's `WORDS[w] || {en:'',emoji:null}` fallback.
+          if (entry && !wordsOut[stripped]) {
+            wordsOut[stripped] = entryToWord(entry, stem, ending);
+          }
+          out.push(stripped);
+          i = j;
+        }
+        return out.join('');
+      }
+
+      function registerUserPack(parsed) {
+        // Merge into the live PACKS, persist to localStorage, and activate. Replaces any same-id user pack.
+        PACKS[parsed.id] = parsed;
+        const list = loadUserPacks().filter(p => p.id !== parsed.id);
+        list.push({
+          id: parsed.id, name: parsed.name, dialect: parsed.dialect,
+          description: parsed.description, words: parsed.words, units: parsed.units
+        });
+        saveUserPacksList(list);
+        if (!activePackIds.includes(parsed.id)) activePackIds = [...activePackIds, parsed.id];
+        rebuildPool();
+        sentenceQueue = [];
+        persistConfig();
+      }
+
+      function removeUserPack(id) {
+        if (BUILTIN_PACK_IDS.includes(id)) return;
+        delete PACKS[id];
+        saveUserPacksList(loadUserPacks().filter(p => p.id !== id));
+        activePackIds = activePackIds.filter(x => x !== id);
+        if (!activePackIds.length) activePackIds = ['logos-basics'];
+        rebuildPool();
+        sentenceQueue = [];
+        renderSettingsPacks();
+        persistConfig();
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+      }
+
+      // --- Import overlay handlers ---
+      const importBtnOpen     = document.getElementById('settings-import-open');
+      const importOverlay     = document.getElementById('import-overlay');
+      const importText        = document.getElementById('import-text');
+      const importStatus      = document.getElementById('import-status');
+      const importLoadBtn     = document.getElementById('import-load');
+      const importCancelBtn   = document.getElementById('import-cancel');
+      const importFromFileBtn = document.getElementById('import-from-file');
+      const importFileInput   = document.getElementById('import-file');
+      const importTemplateBtn = document.getElementById('import-template');
+
+      function downloadTemplate() {
+        const text = window.PACK_TEMPLATE || '';
+        const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+        const url  = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'greek-scribe-pack-template.md';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        importStatus.innerHTML = '<div class="ok">Template downloaded — edit it, then load it back here.</div>';
+      }
+
+      function openImport() {
+        importText.value = '';
+        importStatus.innerHTML = '';
+        importOverlay.classList.remove('hidden');
+        setTimeout(() => importText.focus(), 30);
+      }
+      function closeImport() { importOverlay.classList.add('hidden'); }
+
+      function doImport() {
+        const text = importText.value || '';
+        if (!text.trim()) {
+          importStatus.innerHTML = '<div class="warn">Paste a pack first, or use “From file…”.</div>';
+          return;
+        }
+        const parsed = parsePackText(text);
+        if (parsed.errors.length) {
+          const bits = ['<div class="err"><b>Couldn’t import:</b></div>'];
+          parsed.errors.forEach(e => bits.push('<div class="err">• ' + escHtml(e) + '</div>'));
+          if (parsed.warnings.length) {
+            bits.push('<div class="warn"><b>Warnings:</b></div>');
+            parsed.warnings.forEach(w => bits.push('<div class="warn">• ' + escHtml(w) + '</div>'));
+          }
+          importStatus.innerHTML = bits.join('');
+          return;
+        }
+        registerUserPack(parsed);
+        const total = parsed.units.reduce((a, u) => a + u.lines.length, 0);
+        const wordCount = Object.keys(parsed.words).length;
+        importStatus.innerHTML =
+          '<div class="ok"><b>Loaded “' + escHtml(parsed.name) + '”</b> — '
+            + total + ' sentence' + (total === 1 ? '' : 's') + ' · '
+            + wordCount + ' word' + (wordCount === 1 ? '' : 's') + '.</div>'
+          + (parsed.warnings.length
+              ? '<div class="warn">' + parsed.warnings.map(w => '• ' + escHtml(w)).join('<br>') + '</div>'
+              : '');
+        renderSettingsPacks();
+        setTimeout(closeImport, 1600);
+      }
+
+      importBtnOpen.addEventListener('click', openImport);
+      importCancelBtn.addEventListener('click', closeImport);
+      importOverlay.addEventListener('click', (e) => {
+        if (e.target === importOverlay) closeImport();
+      });
+      importLoadBtn.addEventListener('click', doImport);
+      importTemplateBtn.addEventListener('click', downloadTemplate);
+      importFromFileBtn.addEventListener('click', () => importFileInput.click());
+      importFileInput.addEventListener('change', () => {
+        const f = importFileInput.files && importFileInput.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload  = () => { importText.value = String(reader.result || ''); doImport(); };
+        reader.onerror = () => { importStatus.innerHTML = '<div class="err">Couldn’t read that file.</div>'; };
+        reader.readAsText(f);
+        importFileInput.value = '';
+      });
+
       // On load: restore saved config, or show the welcome screen
       const savedConfig = loadConfig();
       if (savedConfig && Array.isArray(savedConfig.activePacks) && savedConfig.activePacks.length) {
@@ -1500,6 +1961,17 @@
         startGameFlow();
       } else {
         welcomeOverlay.classList.remove('hidden');
+      }
+
+      // Test hooks. Same-origin readers use window.__SCRIBE_TEST__; a parent harness
+      // (greek-tests.html) reads the pack data via postMessage. User-uploaded packs are
+      // excluded from both — the harness only knows the built-in shape.
+      const builtInPacks = BUILTIN_PACK_IDS.reduce((acc, id) => {
+        if (PACKS[id]) acc[id] = PACKS[id]; return acc;
+      }, {});
+      window.__SCRIBE_TEST__ = { PACKS: builtInPacks, parsePackText };
+      if (window.parent && window.parent !== window) {
+        try { window.parent.postMessage({ __greekTest: 'scribe', packs: builtInPacks }, '*'); } catch (e) {}
       }
     })();
   </script>
