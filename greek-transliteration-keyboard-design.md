@@ -5,7 +5,8 @@
 **Status:** Part 1 (core keyboard) shipped · Part 2 (save/manage paragraphs)
 implemented · Part 3 (single Greek-only input, Lexilogos-style) implemented ·
 Part 4 (two-key shortcuts + on-screen buttons) implemented ·
-Part 5 (question mark + diphthong breathing) **implemented**
+Part 5 (question mark + diphthong breathing) implemented ·
+Part 6 (engine extracted to `greek-keyboard-engine.js`) **implemented**
 
 > **Build note (Part 3):** while implementing, a pre-existing ordering bug in
 > `addDiacritical()` surfaced — stacked marks (e.g. `ah/`) were emitted as
@@ -184,14 +185,13 @@ exists.
 - **Paste support** — re-runs conversion after a paste.
 - **Responsive** down to phone widths.
 
-### Known duplicate copies (housekeeping note)
+### Known duplicate copies (housekeeping note — resolved)
 
-Identical/near-identical copies of this file also exist at
-`D:\Claude\greek-transliteration-keyboard.html` and
-`D:\Claude\Ancient Greek Game Komi\greek-transliteration-keyboard.html`. The
-**canonical** copy is the one in this `greek-tools/` git repo. If the save
-feature below is implemented, the stale copies should be deleted or refreshed to
-avoid drift.
+Stale copies once existed at `D:\Claude\greek-transliteration-keyboard.html`
+and `D:\Claude\Ancient Greek Game Komi\greek-transliteration-keyboard.html`;
+both were verified gone on 2026-07-04 (Part 6). The **canonical** copy is the
+one in this `greek-tools/` git repo, and the conversion engine itself now lives
+in `greek-keyboard-engine.js` (see Part 6), shared rather than copied.
 
 ---
 
@@ -730,3 +730,39 @@ Regression suite run in-browser via synthetic `beforeinput` events: hoi, hai,
 houtos, huios, hhai, a)itia, ha/i, hoia, hippos, ti/s?, logos?, kai\ dio/ti,
 hhau:pnia, kah/i (no mid-word migration), hju (ηὑ — real augment diphthong) —
 all pass, plus the same cases through `convert()` for paste.
+
+---
+
+## Part 6 — Engine extraction to `greek-keyboard-engine.js` *(implemented 2026-07-04)*
+
+Done in preparation for the **Greek Composer** app, which needs the same
+type-Latin-see-Greek input surface. The conversion engine moved verbatim from
+the page's inline script into `greek-keyboard-engine.js` (precedent for a
+sibling JS file: `greek-scribe-packs.js`). The page is no longer strictly
+single-file, but both files together still work fully offline via `file://`.
+
+### Shape
+
+`window.GreekKeyboard` exposes:
+
+- **`attach(textarea)`** — wires `beforeinput`/`input`/`paste` and returns a
+  controller `{ applyMark(code), clearPending(), insertTyped(str),
+  normalizeSigma() }`. All per-textarea state (the armed `-` placeholder)
+  lives in the closure, so several textareas can be attached independently.
+- **`convert(latin)`** — the one-shot whole-string converter (paste path).
+- Low-level helpers (`addDiacritical`, `removeMark`, `cycleMark`,
+  `applyFinalSigma`, `getBaseChar`, `marksOf`, vowel/diphthong predicates,
+  `prevGrapheme`) and the maps (`latinToGreek`, `diacritMap`, mark cycles).
+
+The page keeps only UI wiring: `var kb = GreekKeyboard.attach(inp)`, the
+diacritic buttons delegate to `kb.applyMark(code)`, saves call
+`GreekKeyboard.convert` (aliased) and `kb.clearPending()`.
+
+### Verification
+
+Full regression battery re-run in-browser through the real `beforeinput` path
+after extraction: all Part 1–5 behaviors (digraphs, `h` both directions with
+dash placeholder, cycles, stacking, elision apostrophe, `rh`, `thh` quirk,
+final sigma, `?` → `;`, diphthong migration + diaeresis pullback), plus
+`convert()` paste, button path, and the save/load/clear flow — 25/25 pass,
+no console errors.
