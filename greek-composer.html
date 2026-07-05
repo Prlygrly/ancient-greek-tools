@@ -139,6 +139,32 @@ header p{font-size:14px;color:var(--ink-faint)}
 .cheat-box .gk{font-family:'Noto Serif',serif;font-size:16px;color:var(--accent)}
 .cheat-box a{color:var(--link)}
 
+/* ── upload your own ── */
+.upload-card{background:var(--card-bg);border:1px dashed var(--bg-deep);border-radius:12px;padding:20px 22px 18px;margin-top:22px;transition:background .35s}
+.upload-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--ink)}
+.upload-desc{font-size:13.5px;color:var(--ink-light);margin:4px 0 14px;line-height:1.5}
+.upload-desc a{color:var(--link)}
+.upload-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.priv-label{font-size:13px;color:var(--ink-light);display:inline-flex;align-items:center;gap:6px;cursor:help}
+.upload-result{margin-top:12px;font-size:13.5px;display:none}
+.upload-result.show{display:block}
+.upload-result ul{margin:4px 0 0 18px}
+.upload-result .err{color:var(--accent)}
+.upload-result .warn{color:var(--warn)}
+.upload-result .okmsg{color:var(--correct);font-weight:600}
+.tut-open-row{text-align:center;margin:-10px 0 22px}
+.btn-small{padding:6px 14px;font-size:12px}
+
+/* ── tutorial ── */
+.tut-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:24px 24px 20px;transition:background .35s}
+.tut-step{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:8px}
+.tut-say{font-size:15px;color:var(--ink);line-height:1.6;margin-bottom:14px}
+.tut-task{font-size:15px;color:var(--ink-light);margin-bottom:10px}
+.tut-task code{font-family:monospace;background:var(--bg-mid);padding:2px 8px;border-radius:4px;font-size:15px;font-weight:600}
+.tut-target{font-family:'Noto Serif',serif;font-size:19px;color:var(--correct)}
+.tut-status{min-height:26px;font-size:15px;font-weight:600;color:var(--correct);margin-top:10px}
+.tut-actions{display:flex;gap:10px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap}
+
 @media(max-width:500px){
   .container{padding:32px 14px 80px}
   header h1{font-size:26px}
@@ -171,7 +197,18 @@ header p{font-size:14px;color:var(--ink-faint)}
     <h1>Greek Composer</h1>
     <p>Read the question in Ancient Greek &mdash; write your answer back in a full sentence.</p>
   </header>
+  <div class="tut-open-row"><button class="btn-ghost btn-small" onclick="openTutorial()">Typing tutorial</button></div>
   <div id="moduleList"></div>
+
+  <div class="upload-card">
+    <div class="upload-title">Add your own module</div>
+    <p class="upload-desc">Write questions in a simple text file &mdash; <a href="greek-composer-module-template.md" download>download the template</a> to see the format &mdash; then load it here. It's saved in this browser and playable immediately.</p>
+    <div class="upload-row">
+      <label class="btn-ghost">Choose file<input type="file" id="fileInput" accept=".txt,.md,text/plain,text/markdown" hidden></label>
+      <label class="priv-label" title="If unchecked, your module will be sent for review when submissions open, and may be added to the app for everyone to use."><input type="checkbox" id="privCheck"> Keep this module private</label>
+    </div>
+    <div class="upload-result" id="uploadResult"></div>
+  </div>
 </div>
 
 <!-- ═══════ QUIZ ═══════ -->
@@ -231,6 +268,25 @@ header p{font-size:14px;color:var(--ink-faint)}
   </div>
 </div>
 
+<!-- ═══════ TUTORIAL ═══════ -->
+<div class="screen" id="screenTut">
+  <header>
+    <h1>Typing Greek</h1>
+    <p>Your normal keyboard becomes a polytonic Greek keyboard &mdash; six quick steps.</p>
+  </header>
+  <div class="tut-card">
+    <div class="tut-step" id="tutStep"></div>
+    <div class="tut-say" id="tutSay"></div>
+    <div class="tut-task">Type <code id="tutLatin"></code> <span style="color:var(--ink-faint)">&#8594;</span> <span class="tut-target" id="tutTarget"></span></div>
+    <textarea class="greek-input" id="tutInput" placeholder="Type here" rows="1" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>
+    <div class="tut-status" id="tutStatus"></div>
+    <div class="tut-actions">
+      <button class="btn-ghost" id="tutClearBtn" onclick="tutClear()">Clear</button>
+      <button class="btn-ghost" id="tutSkipBtn" onclick="closeTutorial()">Skip tutorial</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════ SUMMARY ═══════ -->
 <div class="screen" id="screenDone">
   <div class="sum-card">
@@ -258,23 +314,29 @@ var USER_MODULES_KEY = 'greek-composer.v1.modules';
 
 var modules = [];   // { id, origin:'builtin'|'user', mod }
 
+function readUserModules(){
+  try{
+    var raw = localStorage.getItem(USER_MODULES_KEY);
+    if(raw){ var arr = JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+  }catch(e){}
+  return [];
+}
+function writeUserModules(arr){
+  try{ localStorage.setItem(USER_MODULES_KEY, JSON.stringify(arr)); return true; }
+  catch(e){ return false; }
+}
+
 function loadModules(){
   modules = [];
   var packs = (window.GreekComposer.BUILTIN_MODULES || []).map(function(p){
     return { id: p.id, origin: 'builtin', source: p.source };
   });
-  try{
-    var raw = localStorage.getItem(USER_MODULES_KEY);
-    if(raw){
-      var arr = JSON.parse(raw);
-      if(Array.isArray(arr)) arr.forEach(function(p){
-        if(p && p.id && p.source) packs.push({ id: p.id, origin: 'user', source: p.source });
-      });
-    }
-  }catch(e){}
+  readUserModules().forEach(function(p){
+    if(p && p.id && p.source) packs.push({ id: p.id, origin: 'user', source: p.source, priv: !!p.private });
+  });
   packs.forEach(function(p){
     var r = GreekComposer.parseModule(p.source);
-    if(r.ok) modules.push({ id: p.id, origin: p.origin, mod: r.module });
+    if(r.ok) modules.push({ id: p.id, origin: p.origin, priv: p.priv, mod: r.module });
     else if(window.console) console.warn('Module "' + p.id + '" failed to parse:', r.errors);
   });
 }
@@ -420,7 +482,7 @@ var cur = null;          // { id, mod, idx }
 var awaitingNext = false;
 
 function showScreen(id){
-  ['screenHome', 'screenQuiz', 'screenDone'].forEach(function(s){
+  ['screenHome', 'screenQuiz', 'screenDone', 'screenTut'].forEach(function(s){
     $(s).classList.toggle('active', s === id);
   });
 }
@@ -450,7 +512,7 @@ function renderHome(){
     var answered = p ? p.scores.filter(function(s){ return s !== undefined && s !== null; }).length : 0;
     var metaBits = [m.questions.length + ' questions'];
     if(m.author) metaBits.push('by ' + m.author);
-    if(entry.origin === 'user') metaBits.push('your upload');
+    if(entry.origin === 'user') metaBits.push(entry.priv ? 'your upload · private' : 'your upload');
     if(p && p.done) metaBits.push('completed');
     else if(answered) metaBits.push(answered + ' answered');
     card.appendChild(el('div', 'mod-meta', metaBits.join(' · ')));
@@ -462,6 +524,11 @@ function renderHome(){
       var restart = el('button', 'btn-ghost', 'Restart');
       restart.onclick = function(){ startModule(entry.id, false); };
       actions.appendChild(restart);
+    }
+    if(entry.origin === 'user'){
+      var delBtn = el('button', 'btn-ghost', 'Delete');
+      delBtn.onclick = function(){ deleteUserModule(entry.id, delBtn); };
+      actions.appendChild(delBtn);
     }
     card.appendChild(actions);
     list.appendChild(card);
@@ -660,8 +727,159 @@ function backHome(){
   showScreen('screenHome');
 }
 
+// ═══════ UPLOAD ═══════
+function slugify(title){
+  var s = title.toLowerCase().replace(/[^a-z0-9Ͱ-Ͽἀ-῿]+/g, '-').replace(/^-+|-+$/g, '');
+  return s.slice(0, 24) || 'module';
+}
+
+function onUploadText(text){
+  var res = $('uploadResult');
+  res.textContent = '';
+  res.classList.add('show');
+  var r = GreekComposer.parseModule(text);
+  if(!r.ok){
+    res.appendChild(el('div', 'err', 'Couldn’t load this file:'));
+    var ul = el('ul');
+    r.errors.forEach(function(e){ ul.appendChild(el('li', 'err', e)); });
+    res.appendChild(ul);
+    return;
+  }
+  var isPrivate = $('privCheck').checked;
+  var arr = readUserModules();
+  arr.push({
+    id: 'user-' + slugify(r.module.title) + '-' + Date.now().toString(36),
+    source: text,
+    private: isPrivate,
+    addedAt: Date.now()
+  });
+  if(!writeUserModules(arr)){
+    res.appendChild(el('div', 'err', 'Couldn’t save — browser storage may be full.'));
+    return;
+  }
+  loadModules();
+  renderHome();
+  res.appendChild(el('div', 'okmsg', '“' + r.module.title + '” added — ' + r.module.questions.length + ' questions.'));
+  if(r.warnings.length){
+    var wul = el('ul');
+    r.warnings.forEach(function(w){ wul.appendChild(el('li', 'warn', w)); });
+    res.appendChild(wul);
+  }
+  res.appendChild(el('div', '', isPrivate
+    ? 'Saved to this browser only.'
+    : 'Saved to this browser. Review submissions aren’t open yet, so nothing has been sent anywhere.'));
+}
+
+function deleteUserModule(id, btn){
+  if(btn.dataset.arm !== '1'){
+    btn.dataset.arm = '1';
+    btn.textContent = 'Really delete?';
+    setTimeout(function(){ btn.dataset.arm = ''; btn.textContent = 'Delete'; }, 2500);
+    return;
+  }
+  writeUserModules(readUserModules().filter(function(p){ return p.id !== id; }));
+  delete progress[id];
+  persistProgress();
+  loadModules();
+  renderHome();
+}
+
+// ═══════ TUTORIAL ═══════
+var TUT_KEY = 'greek-composer.v1.tutorialDone';
+var TUTORIAL_STEPS = [
+  { say: 'Most letters are phonetic — type Latin, see Greek appear. The final sigma takes care of itself.',
+    latin: 'logos', target: 'λογος' },
+  { say: 'Some letters borrow a key by shape or convention: q → θ, w → ω, j → η, y → ψ, c → χ, x → ξ (digraphs th, ph, kh, ps work too).',
+    latin: 'anqrwpos', target: 'ανθρωπος' },
+  { say: 'Accents are typed after their vowel: / for acute (or ’), \\ for grave, = or ~ for circumflex.',
+    latin: 'lo/gos', target: 'λόγος' },
+  { say: 'Type h for rough breathing right where you hear it — at the start of the word.',
+    latin: 'hippos', target: 'ἱππος' },
+  { say: 'On a word-initial diphthong the breathing mark moves to the second vowel by itself.',
+    latin: 'hoi', target: 'οἱ' },
+  { say: 'Smooth breathing is ) typed after the vowel, and the Greek question mark is a semicolon — just press ?. Ask: who are you?',
+    latin: 'ti/s ei)=?', target: 'τίς εἶ;' }
+];
+var tutIdx = 0, tutTimer = null, tutAdvancing = false, tutFinished = false;
+
+function openTutorial(){
+  tutIdx = 0;
+  tutFinished = false;
+  showScreen('screenTut');
+  renderTutStep();
+  if(tutTimer) clearInterval(tutTimer);
+  tutTimer = setInterval(checkTut, 250);
+}
+
+function renderTutStep(){
+  var st = TUTORIAL_STEPS[tutIdx];
+  $('tutStep').textContent = 'Step ' + (tutIdx + 1) + ' of ' + TUTORIAL_STEPS.length;
+  $('tutSay').textContent = st.say;
+  $('tutLatin').textContent = st.latin;
+  $('tutTarget').textContent = st.target;
+  $('tutStatus').textContent = '';
+  $('tutSkipBtn').textContent = 'Skip tutorial';
+  $('tutSkipBtn').className = 'btn-ghost';
+  var inp = $('tutInput');
+  inp.value = '';
+  tutKb.clearPending();
+  tutAdvancing = false;
+  inp.focus();
+}
+
+function checkTut(){
+  if(tutAdvancing || tutFinished) return;
+  var st = TUTORIAL_STEPS[tutIdx];
+  if($('tutInput').value.trim().normalize('NFC') === st.target.normalize('NFC')){
+    tutAdvancing = true;
+    if(tutIdx + 1 >= TUTORIAL_STEPS.length){
+      tutFinished = true;
+      $('tutStatus').textContent = '✓ Ἄριστα! You’re ready.';
+      $('tutSkipBtn').textContent = 'Start practicing →';
+      $('tutSkipBtn').className = 'btn';
+    } else {
+      $('tutStatus').textContent = '✓ ' + PRAISE[Math.floor(Math.random() * PRAISE.length)];
+      setTimeout(function(){ tutIdx++; renderTutStep(); }, 900);
+    }
+  }
+}
+
+function tutClear(){
+  $('tutInput').value = '';
+  tutKb.clearPending();
+  $('tutInput').focus();
+}
+
+function closeTutorial(){
+  if(tutTimer){ clearInterval(tutTimer); tutTimer = null; }
+  try{ localStorage.setItem(TUT_KEY, '1'); }catch(e){}
+  backHome();
+}
+
 // ═══════ WIRING ═══════
 var kb = GreekKeyboard.attach($('answerInput'));
+var tutKb = GreekKeyboard.attach($('tutInput'));
+
+$('fileInput').addEventListener('change', function(){
+  var f = this.files && this.files[0];
+  this.value = '';
+  if(!f) return;
+  if(f.size > GreekComposer.LIMITS.MAX_FILE){
+    var res = $('uploadResult');
+    res.textContent = '';
+    res.classList.add('show');
+    res.appendChild(el('div', 'err', 'File too large (max 200 KB).'));
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(){ onUploadText(String(reader.result || '')); };
+  reader.readAsText(f);
+});
+
+$('tutInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); checkTut(); }
+});
+$('tutInput').addEventListener('keyup', checkTut);
 
 $('answerInput').addEventListener('keydown', function(e){
   if(e.key === 'Enter' && !e.shiftKey){
@@ -698,6 +916,9 @@ try{
 loadModules();
 loadProgress();
 renderHome();
+var tutSeen = false;
+try{ tutSeen = !!localStorage.getItem(TUT_KEY); }catch(e){}
+if(!tutSeen) openTutorial();
 </script>
 </body>
 </html>
