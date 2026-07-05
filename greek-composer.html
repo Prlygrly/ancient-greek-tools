@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greek Composer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=Source+Sans+Pro:wght@400;600;700&family=Noto+Serif:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#2a2118;--ink-light:#5c4d3c;--ink-faint:#8a7a68;
+  --bg:#f5f0e8;--bg-mid:#e8dfd2;--bg-deep:#d9cdb9;
+  --card-bg:#fff;--card-border:#e8dfd2;
+  --accent:#8b3a3a;--accent-soft:#c4787825;
+  --link:#6b4c8a;
+  --correct:#4a7a4e;--correct-soft:#4a7a4e22;
+  --warn:#9a7b2d;--warn-soft:#9a7b2d1e;
+  --toggle-bg:#d9cdb9;--toggle-knob:#fff;
+  --btn-bg:#8b3a3a;--btn-text:#fff;--btn-hover:#a84e4e;
+}
+[data-theme="dark"]{
+  --ink:#e0d8cc;--ink-light:#b8ac9a;--ink-faint:#887c6c;
+  --bg:#1a1614;--bg-mid:#252018;--bg-deep:#302920;
+  --card-bg:#221e1a;--card-border:#3a332a;
+  --accent:#c47878;--accent-soft:#c4787828;
+  --link:#a88cc4;
+  --correct:#7daa82;--correct-soft:#7daa8226;
+  --warn:#c9a856;--warn-soft:#c9a85622;
+  --toggle-bg:#3a332a;--toggle-knob:#e0d8cc;
+  --btn-bg:#c47878;--btn-text:#1a1614;--btn-hover:#d49090;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans Pro',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased;transition:background .35s,color .35s}
+.container{max-width:680px;margin:0 auto;padding:40px 20px 100px}
+
+.home-link{position:fixed;top:16px;left:16px;z-index:100;font-size:12px;font-weight:600;color:var(--ink-faint);text-decoration:none;letter-spacing:.04em;transition:color .2s}
+.home-link:hover{color:var(--accent)}
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.theme-toggle-label{font-size:12px;font-weight:600;color:var(--ink-faint);letter-spacing:.04em}
+.toggle-track{width:44px;height:24px;background:var(--toggle-bg);border-radius:12px;position:relative;transition:background .35s}
+.toggle-knob{width:18px;height:18px;background:var(--toggle-knob);border-radius:50%;position:absolute;top:3px;left:3px;transition:transform .35s,background .35s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-icon{position:absolute;font-size:12px;top:4px;transition:opacity .25s}
+.toggle-icon.sun{right:5px;opacity:1}.toggle-icon.moon{left:5px;opacity:0}
+[data-theme="dark"] .toggle-knob{transform:translateX(20px)}
+[data-theme="dark"] .toggle-icon.sun{opacity:0}
+[data-theme="dark"] .toggle-icon.moon{opacity:1}
+
+header{text-align:center;margin-bottom:28px}
+header h1{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;line-height:1.2;margin-bottom:6px}
+header p{font-size:14px;color:var(--ink-faint)}
+
+.screen{display:none}
+.screen.active{display:block}
+
+/* ── module cards ── */
+.mod-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:22px 22px 18px;margin-bottom:14px;transition:border-color .2s,background .35s}
+.mod-card:hover{border-color:var(--accent)}
+.mod-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--ink);line-height:1.2}
+.mod-desc{font-size:14px;color:var(--ink-light);margin:6px 0 4px;line-height:1.5}
+.mod-meta{font-size:12px;color:var(--ink-faint);margin-bottom:14px}
+.mod-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{padding:9px 20px;font-family:'Source Sans Pro',sans-serif;font-size:13px;font-weight:600;background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:7px;cursor:pointer;transition:background .2s}
+.btn:hover{background:var(--btn-hover)}
+.btn-ghost{padding:8px 16px;font-family:'Source Sans Pro',sans-serif;font-size:13px;font-weight:600;background:transparent;color:var(--ink-light);border:1.5px solid var(--card-border);border-radius:7px;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.empty-note{text-align:center;font-size:14px;color:var(--ink-faint);font-style:italic;padding:24px 0}
+
+/* ── quiz ── */
+.quiz-top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.quiz-back{font-size:13px;font-weight:600;color:var(--ink-faint);background:none;border:none;cursor:pointer;padding:4px 0;transition:color .2s}
+.quiz-back:hover{color:var(--accent)}
+.quiz-modname{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--ink-light);flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quiz-count{font-size:13px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.progress-track{height:4px;background:var(--bg-mid);border-radius:2px;margin-bottom:22px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;width:0;transition:width .3s}
+
+.q-section{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:10px}
+.q-text{background:var(--card-bg);border:1px solid var(--card-border);border-left:3px solid var(--accent);border-radius:8px;padding:14px 18px;margin-bottom:16px;font-family:'Noto Serif',serif;font-size:19px;color:var(--ink);line-height:1.7;white-space:pre-line}
+.q-question{font-family:'Noto Serif',serif;font-size:26px;color:var(--accent);line-height:1.5;margin-bottom:18px}
+
+.greek-input{width:100%;font-family:'Noto Serif',serif;font-size:22px;color:var(--accent);letter-spacing:.03em;line-height:1.6;padding:14px 16px;border:2px solid var(--card-border);border-radius:10px;background:var(--card-bg);outline:none;transition:border-color .2s,background .35s,opacity .2s;resize:vertical;min-height:88px}
+.greek-input:focus{border-color:var(--accent)}
+.greek-input::placeholder{font-family:'Source Sans Pro',sans-serif;font-size:15px;color:var(--ink-faint);letter-spacing:0}
+.input-wrap.locked .greek-input{opacity:.65}
+.input-wrap.locked .dia-btn{pointer-events:none;opacity:.5}
+
+.diacritic-bar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.dia-btn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:44px;padding:5px 7px;background:var(--card-bg);border:1.5px solid var(--card-border);border-radius:8px;cursor:pointer;transition:all .15s}
+.dia-btn .dia-glyph{font-family:'Noto Serif',serif;font-size:18px;color:var(--accent);line-height:1}
+.dia-btn .dia-label{font-family:'Source Sans Pro',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-faint)}
+.dia-btn:hover{border-color:var(--accent);background:var(--accent-soft)}
+
+.quiz-actions{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.hint-row{margin-top:12px;font-size:14px;color:var(--ink-light);background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:10px 14px;display:none}
+.hint-row.show{display:block}
+.hint-row .hint-greek{font-family:'Noto Serif',serif;font-size:17px}
+
+/* ── feedback ── */
+.feedback{display:none;margin-top:20px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:18px 20px;transition:background .35s}
+.feedback.show{display:block}
+.fb-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.fb-badge{font-size:15px;font-weight:700;padding:4px 14px;border-radius:14px;font-variant-numeric:tabular-nums}
+.fb-badge.good{background:var(--correct-soft);color:var(--correct)}
+.fb-badge.marks{background:var(--warn-soft);color:var(--warn)}
+.fb-badge.try{background:var(--accent-soft);color:var(--accent)}
+.fb-msg{font-size:15px;color:var(--ink);font-weight:600}
+.fb-caveat{font-size:12px;color:var(--ink-faint);font-style:italic;margin-bottom:10px}
+.fb-detail{font-size:14px;color:var(--ink-light)}
+.fb-detail .greek{font-family:'Noto Serif',serif;font-size:18px;color:var(--ink);line-height:1.8}
+.fb-detail .hl{background:var(--warn-soft);border-bottom:2px solid var(--warn);border-radius:2px}
+.fb-list{list-style:none;margin:8px 0}
+.fb-list li{padding:2px 0;font-size:14px}
+.fb-list .greek{font-size:17px}
+.fb-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 7px;border-radius:8px;margin-right:7px;vertical-align:1px}
+.fb-tag.miss{background:var(--accent-soft);color:var(--accent)}
+.fb-tag.extra{background:var(--bg-mid);color:var(--ink-faint)}
+.fb-tag.near{background:var(--warn-soft);color:var(--warn)}
+.fb-models{margin-top:12px;padding-top:10px;border-top:1px dashed var(--card-border)}
+.fb-models-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:4px}
+.fb-models .greek{display:block;font-family:'Noto Serif',serif;font-size:17px;color:var(--correct);line-height:1.7}
+.fb-next-row{margin-top:14px;display:flex;justify-content:flex-end}
+
+/* ── summary ── */
+.sum-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:32px 24px;text-align:center;transition:background .35s}
+.sum-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;margin-bottom:4px}
+.sum-score{font-size:44px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;margin:10px 0 2px}
+.sum-note{font-size:14px;color:var(--ink-light);margin-bottom:22px}
+.sum-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+/* ── typing help ── */
+.ref-section{margin-top:20px}
+.ref-toggle{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--ink-light);border-radius:8px;transition:color .2s}
+.ref-toggle:hover{color:var(--accent)}
+.ref-toggle .arrow{transition:transform .2s;display:inline-block}
+.ref-toggle .arrow.open{transform:rotate(180deg)}
+.ref-content{display:none;margin-top:10px}
+.ref-content.show{display:block}
+.cheat-box{background:var(--card-bg);border-radius:8px;border:1px solid var(--card-border);padding:12px 16px;font-size:13px;color:var(--ink-light);line-height:1.8}
+.cheat-box code{font-family:monospace;background:var(--bg-mid);padding:1px 5px;border-radius:3px;font-size:12.5px}
+.cheat-box .gk{font-family:'Noto Serif',serif;font-size:16px;color:var(--accent)}
+.cheat-box a{color:var(--link)}
+
+@media(max-width:500px){
+  .container{padding:32px 14px 80px}
+  header h1{font-size:26px}
+  .q-question{font-size:22px}
+  .greek-input{font-size:19px}
+  .theme-toggle{top:10px;right:10px}
+  .theme-toggle-label{display:none}
+  .home-link{top:10px;left:10px}
+}
+</style>
+</head>
+<body>
+
+<a class="home-link" href="index.html">&#8592; Home</a>
+
+<div class="theme-toggle" onclick="toggleTheme()" role="button" tabindex="0">
+  <span class="theme-toggle-label">Dark mode</span>
+  <div class="toggle-track">
+    <span class="toggle-icon sun">&#9788;</span>
+    <span class="toggle-icon moon">&#9790;</span>
+    <div class="toggle-knob"></div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════ HOME ═══════ -->
+<div class="screen active" id="screenHome">
+  <header>
+    <h1>Greek Composer</h1>
+    <p>Read the question in Ancient Greek &mdash; write your answer back in a full sentence.</p>
+  </header>
+  <div id="moduleList"></div>
+</div>
+
+<!-- ═══════ QUIZ ═══════ -->
+<div class="screen" id="screenQuiz">
+  <div class="quiz-top">
+    <button class="quiz-back" onclick="backHome()">&#8592; Modules</button>
+    <div class="quiz-modname" id="quizModName"></div>
+    <div class="quiz-count" id="quizCount"></div>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="q-section" id="qSection"></div>
+  <div class="q-text" id="qText"></div>
+  <div class="q-question" id="qQuestion"></div>
+
+  <div class="input-wrap" id="inputWrap">
+    <textarea class="greek-input" id="answerInput" placeholder="Type your answer — Latin letters become Greek (try: ho anqrwpos)" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>
+    <div class="diacritic-bar" aria-label="Diacritic buttons">
+      <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="kb.applyMark(0x0301)" title="Acute accent"><span class="dia-glyph">&#x1F71;</span><span class="dia-label">acute</span></button>
+      <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="kb.applyMark(0x0300)" title="Grave accent"><span class="dia-glyph">&#x1F70;</span><span class="dia-label">grave</span></button>
+      <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="kb.applyMark(0x0342)" title="Circumflex"><span class="dia-glyph">&#x1FB6;</span><span class="dia-label">circ</span></button>
+      <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="kb.applyMark(0x0314)" title="Rough breathing"><span class="dia-glyph">&#x1F01;</span><span class="dia-label">rough</span></button>
+      <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="kb.applyMark(0x0313)" title="Smooth breathing"><span class="dia-glyph">&#x1F00;</span><span class="dia-label">smooth</span></button>
+      <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="kb.applyMark(0x0345)" title="Iota subscript"><span class="dia-glyph">&#x1FB3;</span><span class="dia-label">iota</span></button>
+      <button class="dia-btn" type="button" onmousedown="event.preventDefault()" onclick="kb.applyMark(0x0308)" title="Diaeresis"><span class="dia-glyph">&#x03CA;</span><span class="dia-label">diaer</span></button>
+    </div>
+  </div>
+
+  <div class="quiz-actions">
+    <button class="btn" id="submitBtn" onclick="onSubmit()">Submit</button>
+    <button class="btn-ghost" id="hintBtn" onclick="showHint()" style="display:none">Hint</button>
+  </div>
+  <div class="hint-row" id="hintRow"></div>
+
+  <div class="feedback" id="feedback">
+    <div class="fb-head">
+      <span class="fb-badge" id="fbBadge"></span>
+      <span class="fb-msg" id="fbMsg"></span>
+    </div>
+    <div class="fb-caveat" id="fbCaveat" style="display:none"></div>
+    <div class="fb-detail" id="fbDetail"></div>
+    <div class="fb-next-row"><button class="btn" id="nextBtn" onclick="nextQuestion()">Next &#8594;</button></div>
+  </div>
+
+  <div class="ref-section">
+    <div class="ref-toggle" onclick="toggleRef()">
+      <span>Typing help</span>
+      <span class="arrow" id="refArrow">&#9660;</span>
+    </div>
+    <div class="ref-content" id="refContent">
+      <div class="cheat-box">
+        <strong>Letters:</strong> most keys are phonetic (<code>a</code>&rarr;<span class="gk">&alpha;</span>, <code>b</code>&rarr;<span class="gk">&beta;</span> &hellip;). Special: <code>j</code>&rarr;<span class="gk">&eta;</span>, <code>w</code>&rarr;<span class="gk">&omega;</span>, <code>q</code>/<code>th</code>&rarr;<span class="gk">&theta;</span>, <code>f</code>/<code>ph</code>&rarr;<span class="gk">&phi;</span>, <code>c</code>/<code>kh</code>&rarr;<span class="gk">&chi;</span>, <code>y</code>/<code>ps</code>&rarr;<span class="gk">&psi;</span>, <code>x</code>&rarr;<span class="gk">&xi;</span>.<br>
+        <strong>Breathing:</strong> <code>h</code> where you hear it (<code>ho</code>&rarr;<span class="gk">&#x1F41;</span>, <code>hoi</code>&rarr;<span class="gk">&#x03BF;&#x1F31;</span>); press <code>h</code> again for smooth. <strong>Accents:</strong> <code>/</code> or <code>'</code> acute, <code>\</code> grave, <code>=</code> or <code>~</code> circumflex, <code>|</code> iota subscript, <code>:</code> diaeresis &mdash; typed after the vowel.<br>
+        <strong>Question mark:</strong> <code>?</code> &rarr; <span class="gk">;</span> &nbsp;&middot;&nbsp; final sigma is automatic &nbsp;&middot;&nbsp; full reference in the <a href="greek-transliteration-keyboard.html" target="_blank">keyboard tool</a>.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SUMMARY ═══════ -->
+<div class="screen" id="screenDone">
+  <div class="sum-card">
+    <div class="sum-title" id="sumTitle"></div>
+    <div class="sum-score" id="sumScore"></div>
+    <div class="sum-note" id="sumNote"></div>
+    <div class="sum-actions">
+      <button class="btn-ghost" onclick="restartCurrent()">Try again</button>
+      <button class="btn" onclick="backHome()">Back to modules</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="greek-keyboard-engine.js"></script>
+<script src="greek-composer-parser.js"></script>
+<script src="greek-composer-modules.js"></script>
+<script>
+function $(id){ return document.getElementById(id); }
+
+// ═══════ MODULE LOADING ═══════
+var PROGRESS_KEY = 'greek-composer.v1.progress';
+var USER_MODULES_KEY = 'greek-composer.v1.modules';
+
+var modules = [];   // { id, origin:'builtin'|'user', mod }
+
+function loadModules(){
+  modules = [];
+  var packs = (window.GreekComposer.BUILTIN_MODULES || []).map(function(p){
+    return { id: p.id, origin: 'builtin', source: p.source };
+  });
+  try{
+    var raw = localStorage.getItem(USER_MODULES_KEY);
+    if(raw){
+      var arr = JSON.parse(raw);
+      if(Array.isArray(arr)) arr.forEach(function(p){
+        if(p && p.id && p.source) packs.push({ id: p.id, origin: 'user', source: p.source });
+      });
+    }
+  }catch(e){}
+  packs.forEach(function(p){
+    var r = GreekComposer.parseModule(p.source);
+    if(r.ok) modules.push({ id: p.id, origin: p.origin, mod: r.module });
+    else if(window.console) console.warn('Module "' + p.id + '" failed to parse:', r.errors);
+  });
+}
+
+var progress = {};   // { [modId]: { idx, scores: [], done } }
+function loadProgress(){
+  try{ var raw = localStorage.getItem(PROGRESS_KEY); if(raw){ var p = JSON.parse(raw); if(p && typeof p === 'object') progress = p; } }catch(e){}
+}
+function persistProgress(){
+  try{ localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); }catch(e){}
+}
+
+// ═══════ TEXT FOLDING & GRADING ═══════
+function isCombiningCode(c){
+  return (c >= 0x0300 && c <= 0x036F) || c === 0x0345 || (c >= 0x1DC0 && c <= 0x1DFF);
+}
+// canonical comparison form: NFC, lowercase, final sigma unified, punctuation
+// out, whitespace collapsed
+function fold(s){
+  s = s.normalize('NFC').toLowerCase().replace(/ς/g, 'σ');
+  s = s.replace(/[.,;·!?«»"'’]/g, ' ');
+  return s.replace(/\s+/g, ' ').trim();
+}
+// remove every combining mark (accents, breathings, subscript, diaeresis)
+function stripMarks(s){
+  var nfd = s.normalize('NFD'), out = '';
+  for(var i = 0; i < nfd.length; i++){
+    if(!isCombiningCode(nfd.charCodeAt(i))) out += nfd[i];
+  }
+  return out.normalize('NFC');
+}
+// split into graphemes (base char + trailing combining marks)
+function graphemes(s){
+  var out = [], curG = '';
+  for(var i = 0; i < s.length; i++){
+    if(curG && !isCombiningCode(s.charCodeAt(i))){ out.push(curG); curG = ''; }
+    curG += s[i];
+  }
+  if(curG) out.push(curG);
+  return out;
+}
+
+function charLev(a, b){
+  var m = a.length, n = b.length;
+  if(!m) return n; if(!n) return m;
+  var prev = [], row = [];
+  for(var j = 0; j <= n; j++) prev[j] = j;
+  for(var i = 1; i <= m; i++){
+    row[0] = i;
+    for(var jj = 1; jj <= n; jj++){
+      var cost = a[i-1] === b[jj-1] ? 0 : 1;
+      row[jj] = Math.min(prev[jj] + 1, row[jj-1] + 1, prev[jj-1] + cost);
+    }
+    prev = row.slice();
+  }
+  return prev[n];
+}
+
+// Align user tokens against answer tokens (edit distance over words, where
+// substitution cost is the normalized character distance). Returns ops:
+// {type:'match'|'sub'|'miss'|'extra', u, a}
+function alignTokens(uToks, aToks){
+  var m = uToks.length, n = aToks.length;
+  var d = [], i, j;
+  for(i = 0; i <= m; i++){ d[i] = []; d[i][0] = i; }
+  for(j = 0; j <= n; j++) d[0][j] = j;
+  for(i = 1; i <= m; i++){
+    for(j = 1; j <= n; j++){
+      var subCost = charLev(uToks[i-1], aToks[j-1]) / Math.max(uToks[i-1].length, aToks[j-1].length);
+      d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + subCost);
+    }
+  }
+  var ops = [];
+  i = m; j = n;
+  while(i > 0 || j > 0){
+    if(i > 0 && j > 0){
+      var subC = charLev(uToks[i-1], aToks[j-1]) / Math.max(uToks[i-1].length, aToks[j-1].length);
+      if(Math.abs(d[i][j] - (d[i-1][j-1] + subC)) < 1e-9){
+        ops.unshift({ type: subC === 0 ? 'match' : 'sub', u: uToks[i-1], a: aToks[j-1] });
+        i--; j--; continue;
+      }
+    }
+    if(i > 0 && (j === 0 || Math.abs(d[i][j] - (d[i-1][j] + 1)) < 1e-9)){
+      ops.unshift({ type: 'extra', u: uToks[i-1], a: '' }); i--; continue;
+    }
+    ops.unshift({ type: 'miss', u: '', a: aToks[j-1] }); j--;
+  }
+  return { ops: ops, cost: d[m][n] };
+}
+
+// how do two nearly-equal words differ?
+function classifySub(u, a){
+  if(stripMarks(u) === stripMarks(a)) return 'marks';
+  var minLen = Math.min(u.length, a.length), common = 0;
+  while(common < minLen && u[common] === a[common]) common++;
+  if(common >= 2 && common >= Math.ceil(minLen * 0.5) &&
+     charLev(u, a) <= Math.max(2, Math.ceil(a.length * 0.4))) return 'ending';
+  if(charLev(u, a) <= Math.max(1, Math.floor(a.length / 3))) return 'spelling';
+  return 'word';
+}
+
+// Placeholder for Batch 6 — returns null when no AI grading is available.
+function gradeWithLLM(question, userAnswer){
+  return Promise.resolve(null);
+}
+
+// grade → { tier, score, matched?, best? }
+function grade(userRaw, q){
+  var uf = fold(userRaw);
+  var i;
+  for(i = 0; i < q.answers.length; i++){
+    if(uf === fold(q.answers[i])) return Promise.resolve({ tier: 1, score: 100, matched: q.answers[i] });
+  }
+  for(i = 0; i < q.answers.length; i++){
+    if(stripMarks(uf) === stripMarks(fold(q.answers[i]))) return Promise.resolve({ tier: 2, score: 90, matched: q.answers[i] });
+  }
+  return gradeWithLLM(q, userRaw).then(function(llm){
+    if(llm) return llm;   // { tier:3, score, feedback }
+    if(!q.answers.length) return { tier: 5, score: null, best: null };
+    // heuristic: compare against the closest accepted answer
+    var uToks = uf.split(' '), best = null;
+    for(var k = 0; k < q.answers.length; k++){
+      var aToks = fold(q.answers[k]).split(' ');
+      var al = alignTokens(uToks, aToks);
+      var norm = al.cost / Math.max(aToks.length, 1);
+      if(!best || norm < best.norm) best = { answer: q.answers[k], ops: al.ops, norm: norm, aCount: aToks.length };
+    }
+    var pts = 0;
+    best.ops.forEach(function(op){
+      if(op.type === 'match') pts += 1;
+      else if(op.type === 'sub'){
+        var c = classifySub(op.u, op.a);
+        pts += (c === 'marks') ? 0.8 : (c === 'ending' || c === 'spelling') ? 0.45 : 0.1;
+      }
+    });
+    var score = Math.max(0, Math.min(95, Math.round(pts / best.aCount * 20) * 5));
+    return { tier: 5, score: score, best: best };
+  });
+}
+
+// ═══════ STATE & SCREENS ═══════
+var cur = null;          // { id, mod, idx }
+var awaitingNext = false;
+
+function showScreen(id){
+  ['screenHome', 'screenQuiz', 'screenDone'].forEach(function(s){
+    $(s).classList.toggle('active', s === id);
+  });
+}
+
+var PRAISE = ['Ἄριστα!', 'Εὖγε!', 'Καλῶς!', 'Ὀρθῶς!', 'Σοφῶς!'];
+
+function el(tag, cls, text){
+  var e = document.createElement(tag);
+  if(cls) e.className = cls;
+  if(text !== undefined) e.textContent = text;
+  return e;
+}
+
+function renderHome(){
+  var list = $('moduleList');
+  list.textContent = '';
+  if(!modules.length){
+    list.appendChild(el('div', 'empty-note', 'No modules loaded.'));
+    return;
+  }
+  modules.forEach(function(entry){
+    var m = entry.mod;
+    var card = el('div', 'mod-card');
+    card.appendChild(el('div', 'mod-title', m.title));
+    if(m.description) card.appendChild(el('div', 'mod-desc', m.description));
+    var p = progress[entry.id];
+    var answered = p ? p.scores.filter(function(s){ return s !== undefined && s !== null; }).length : 0;
+    var metaBits = [m.questions.length + ' questions'];
+    if(m.author) metaBits.push('by ' + m.author);
+    if(entry.origin === 'user') metaBits.push('your upload');
+    if(p && p.done) metaBits.push('completed');
+    else if(answered) metaBits.push(answered + ' answered');
+    card.appendChild(el('div', 'mod-meta', metaBits.join(' · ')));
+    var actions = el('div', 'mod-actions');
+    var startBtn = el('button', 'btn', (p && !p.done && answered) ? 'Continue' : 'Start');
+    startBtn.onclick = function(){ startModule(entry.id, true); };
+    actions.appendChild(startBtn);
+    if(p && answered){
+      var restart = el('button', 'btn-ghost', 'Restart');
+      restart.onclick = function(){ startModule(entry.id, false); };
+      actions.appendChild(restart);
+    }
+    card.appendChild(actions);
+    list.appendChild(card);
+  });
+}
+
+function startModule(id, resume){
+  var entry = null;
+  for(var i = 0; i < modules.length; i++){ if(modules[i].id === id){ entry = modules[i]; break; } }
+  if(!entry) return;
+  var p = progress[id];
+  if(!resume || !p || p.done){
+    p = { idx: 0, scores: [], done: false };
+    progress[id] = p;
+    persistProgress();
+  }
+  cur = { id: id, mod: entry.mod, idx: Math.min(p.idx, entry.mod.questions.length - 1) };
+  $('quizModName').textContent = entry.mod.title;
+  showScreen('screenQuiz');
+  showQuestion();
+}
+
+function showQuestion(){
+  var q = cur.mod.questions[cur.idx];
+  var total = cur.mod.questions.length;
+  $('quizCount').textContent = (cur.idx + 1) + ' / ' + total;
+  $('progressFill').style.width = (cur.idx / total * 100) + '%';
+  $('qSection').textContent = q.section || '';
+  $('qSection').style.display = q.section ? '' : 'none';
+  $('qText').textContent = q.text || '';
+  $('qText').style.display = q.text ? '' : 'none';
+  $('qQuestion').textContent = q.q;
+  $('hintBtn').style.display = q.hint ? '' : 'none';
+  $('hintRow').classList.remove('show');
+  $('feedback').classList.remove('show');
+  $('inputWrap').classList.remove('locked');
+  $('submitBtn').disabled = false;
+  var inp = $('answerInput');
+  inp.readOnly = false;
+  inp.value = '';
+  kb.clearPending();
+  awaitingNext = false;
+  inp.focus();
+}
+
+function showHint(){
+  var q = cur.mod.questions[cur.idx];
+  var row = $('hintRow');
+  row.textContent = '';
+  var g = el('span', 'hint-greek', q.hint);
+  row.appendChild(g);
+  row.classList.add('show');
+  $('answerInput').focus();
+}
+
+function onSubmit(){
+  if(awaitingNext || !cur) return;
+  var q = cur.mod.questions[cur.idx];
+  var raw = $('answerInput').value.trim();
+  if(!raw) return;
+  $('submitBtn').disabled = true;
+  grade(raw, q).then(function(res){
+    awaitingNext = true;
+    $('inputWrap').classList.add('locked');
+    $('answerInput').readOnly = true;
+    progress[cur.id].scores[cur.idx] = res.score;
+    persistProgress();
+    renderFeedback(res, q, raw);
+  });
+}
+
+function renderFeedback(res, q, raw){
+  var badge = $('fbBadge'), msg = $('fbMsg'), caveat = $('fbCaveat'), detail = $('fbDetail');
+  detail.textContent = '';
+  caveat.style.display = 'none';
+
+  if(res.tier === 1){
+    badge.className = 'fb-badge good'; badge.textContent = '100%';
+    msg.textContent = PRAISE[Math.floor(Math.random() * PRAISE.length)] + ' Exactly right.';
+  } else if(res.tier === 2){
+    badge.className = 'fb-badge marks'; badge.textContent = '90%';
+    msg.textContent = 'Right words — check the marks.';
+    detail.appendChild(el('div', '', 'Model answer with the differing marks highlighted:'));
+    detail.appendChild(buildMarkDiff(raw, res.matched));
+  } else if(res.score === null){
+    badge.className = 'fb-badge try'; badge.textContent = '—';
+    msg.textContent = 'No stored answers for this question.';
+    detail.appendChild(el('div', '', 'AI grading isn’t set up yet, so this one can’t be checked automatically. Compare with your book.'));
+  } else {
+    badge.className = 'fb-badge try'; badge.textContent = '~' + res.score + '%';
+    msg.textContent = res.score >= 70 ? 'Close — compare below.' : 'Not quite — compare below.';
+    caveat.textContent = 'Automated comparison — may be imperfect or partial.';
+    caveat.style.display = '';
+    detail.appendChild(buildHeuristicDetail(res.best));
+  }
+
+  if(res.tier !== 1 && q.answers.length){
+    var models = el('div', 'fb-models');
+    models.appendChild(el('div', 'fb-models-label', 'Accepted answers'));
+    q.answers.forEach(function(a){ models.appendChild(el('span', 'greek', a)); });
+    detail.appendChild(models);
+  }
+
+  $('feedback').classList.add('show');
+  $('nextBtn').textContent = (cur.idx + 1 >= cur.mod.questions.length) ? 'Finish' : 'Next →';
+  $('nextBtn').focus();
+}
+
+// tier-2 detail: the model answer, highlighting graphemes whose marks differ
+// from what the user typed (bases are identical by construction)
+function buildMarkDiff(userRaw, answer){
+  var box = el('div', 'greek');
+  var ug = graphemes(fold(userRaw));
+  var ag = graphemes(fold(answer));
+  if(ug.length !== ag.length){ box.textContent = answer; return box; }
+  // display the original answer; map alignment via its folded graphemes
+  var orig = graphemes(answer.normalize('NFC'));
+  var oi = 0;
+  for(var i = 0; i < ag.length; i++){
+    // advance through original graphemes, carrying punctuation/space straight over
+    while(oi < orig.length && fold(orig[oi]) === ''){ box.appendChild(document.createTextNode(orig[oi])); oi++; }
+    if(oi >= orig.length) break;
+    var span = el('span', '', orig[oi]);
+    if(ug[i].normalize('NFC') !== ag[i].normalize('NFC')) span.className = 'hl';
+    box.appendChild(span);
+    oi++;
+  }
+  while(oi < orig.length){ box.appendChild(document.createTextNode(orig[oi])); oi++; }
+  return box;
+}
+
+function buildHeuristicDetail(best){
+  var wrap = el('div');
+  var list = el('ul', 'fb-list');
+  var matched = 0;
+  best.ops.forEach(function(op){
+    if(op.type === 'match'){ matched++; return; }
+    var li = el('li');
+    if(op.type === 'miss'){
+      li.appendChild(el('span', 'fb-tag miss', 'missing'));
+      li.appendChild(el('span', 'greek', op.a));
+    } else if(op.type === 'extra'){
+      li.appendChild(el('span', 'fb-tag extra', 'extra'));
+      li.appendChild(el('span', 'greek', op.u));
+    } else {
+      var c = classifySub(op.u, op.a);
+      var label = c === 'marks' ? 'accents' : c === 'ending' ? 'ending' : c === 'spelling' ? 'spelling' : 'different word';
+      li.appendChild(el('span', 'fb-tag near', label));
+      li.appendChild(el('span', 'greek', op.u + ' → ' + op.a));
+    }
+    list.appendChild(li);
+  });
+  if(matched) wrap.appendChild(el('div', '', matched + ' word' + (matched === 1 ? '' : 's') + ' matched.'));
+  if(list.children.length) wrap.appendChild(list);
+  return wrap;
+}
+
+function nextQuestion(){
+  if(!cur) return;
+  var p = progress[cur.id];
+  if(cur.idx + 1 >= cur.mod.questions.length){
+    p.done = true;
+    persistProgress();
+    showSummary();
+    return;
+  }
+  cur.idx++;
+  p.idx = cur.idx;
+  persistProgress();
+  showQuestion();
+}
+
+function showSummary(){
+  var p = progress[cur.id];
+  var scored = p.scores.filter(function(s){ return typeof s === 'number'; });
+  var avg = scored.length ? Math.round(scored.reduce(function(a, b){ return a + b; }, 0) / scored.length) : null;
+  $('sumTitle').textContent = cur.mod.title;
+  $('sumScore').textContent = avg === null ? '—' : avg + '%';
+  var note;
+  if(avg === null) note = 'Finished — no gradable answers.';
+  else if(avg >= 95) note = 'Ἄριστα! Practically perfect.';
+  else if(avg >= 85) note = 'Εὖγε! Strong work — mind the marks.';
+  else if(avg >= 65) note = 'Καλῶς. Solid — worth another pass.';
+  else note = 'Keep going — another round will help.';
+  $('sumNote').textContent = note + ' (' + scored.length + ' of ' + cur.mod.questions.length + ' graded)';
+  showScreen('screenDone');
+}
+
+function restartCurrent(){
+  if(cur) startModule(cur.id, false);
+}
+
+function backHome(){
+  cur = null;
+  renderHome();
+  showScreen('screenHome');
+}
+
+// ═══════ WIRING ═══════
+var kb = GreekKeyboard.attach($('answerInput'));
+
+$('answerInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    if(awaitingNext) nextQuestion(); else onSubmit();
+  }
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Enter' && awaitingNext && document.activeElement !== $('answerInput')){
+    e.preventDefault();
+    nextQuestion();
+  }
+});
+
+function toggleRef(){
+  var content = $('refContent'), arrow = $('refArrow');
+  var show = !content.classList.contains('show');
+  content.classList.toggle('show', show);
+  arrow.classList.toggle('open', show);
+}
+
+function toggleTheme(){
+  var h = document.documentElement, c = h.getAttribute('data-theme'), n = c === 'dark' ? 'light' : 'dark';
+  h.setAttribute('data-theme', n);
+  try{ localStorage.setItem('greek-plan-theme', n); }catch(e){}
+}
+try{
+  var s = localStorage.getItem('greek-plan-theme');
+  if(s === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  else if(!s && window.matchMedia('(prefers-color-scheme:dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+}catch(e){}
+
+// init
+loadModules();
+loadProgress();
+renderHome();
+</script>
+</body>
+</html>
