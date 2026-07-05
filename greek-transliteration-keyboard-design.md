@@ -4,7 +4,8 @@
 **Part of:** Prlygrly's Ancient Greek Alphabet Tools suite (`index.html`)
 **Status:** Part 1 (core keyboard) shipped · Part 2 (save/manage paragraphs)
 implemented · Part 3 (single Greek-only input, Lexilogos-style) implemented ·
-Part 4 (two-key shortcuts + on-screen buttons) **implemented**
+Part 4 (two-key shortcuts + on-screen buttons) implemented ·
+Part 5 (question mark + diphthong breathing) **implemented**
 
 > **Build note (Part 3):** while implementing, a pre-existing ordering bug in
 > `addDiacritical()` surfaced — stacked marks (e.g. `ah/`) were emitted as
@@ -690,3 +691,42 @@ button as a later nicety — flagged, not v1.
 4. **Tests:** apply each mark after a vowel; no-target no-op; caret retained;
    works after both typed and pasted text; combine with typed marks (stacking via
    `addDiacritical` ordering fix from Part 3).
+
+---
+
+## Part 5 — Question mark + diphthong breathing *(implemented 2026-07-04)*
+
+Two fixes requested while planning the Greek Composer app; both live in the
+incremental engine **and** the paste path (`convert()`).
+
+### 5A — `?` types the Greek question mark
+
+Typing `?` inserts `;` (U+003B — the Greek question mark; U+037E is canonically
+equivalent and NFC-folds to it anyway). Final-sigma normalization already
+treats `;` as a word boundary, so `logos?` → λογος; with a proper final ς.
+
+### 5B — Breathing marks migrate to the second vowel of an initial diphthong
+
+Standard orthography puts the breathing (and any accent) on the **second**
+vowel of a word-initial diphthong (οἱ, αἱ, υἱός, οὗτος, ηὗρον). The user types
+the `h` where it is *heard* — at the start — and the engine moves the mark:
+
+- `hoi` → οἱ, `houtos` → οὑτος, `huios` → υἱός territory (`hui` → υἱ).
+- Works for smooth breathing too: `hhai` → αἰ, `a)itia` → αἰτία's αἰ.
+- Accents typed early migrate with the breathing: `ha/i` → αἵ.
+- **Word-initial only** (`kahi` never migrates) and **only once** — a third
+  vowel doesn't move it (`hoia` → οἱα).
+- Diphthong set: αι ει οι υι αυ ευ ου ηυ ωυ (case-insensitive via base chars).
+- **Diaeresis reverses it**: marking the second vowel with `:` breaks the
+  diphthong and sends the breathing back to the first vowel —
+  `hhau:pnia` → ἀϋπνία's ἀϋ. Implemented in `applyMarkAt()`, used by the typed
+  `:` key and the on-screen diaeresis button alike.
+
+New helpers: `isDiphthong`, `isGreekLetter`, `marksOf`, `isWordInitial`,
+`migrateDiphthongMarks` (letter path), `applyMarkAt` (diacritic path).
+No migration when the first vowel carries a diaeresis or iota subscript.
+
+Regression suite run in-browser via synthetic `beforeinput` events: hoi, hai,
+houtos, huios, hhai, a)itia, ha/i, hoia, hippos, ti/s?, logos?, kai\ dio/ti,
+hhau:pnia, kah/i (no mid-word migration), hju (ηὑ — real augment diphthong) —
+all pass, plus the same cases through `convert()` for paste.
