@@ -1,0 +1,20 @@
+# Greek Composer grading proxy — deploy with: npx wrangler deploy
+# One-time setup (see README.md):
+#   npx wrangler kv namespace create RATE_KV   → paste the id below
+#   npx wrangler secret put GEMINI_API_KEY
+#   npx wrangler secret put ACCESS_PASSWORD
+name = "greek-composer-worker"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+
+kv_namespaces = [
+  { binding = "RATE_KV", id = "REPLACE_AFTER_KV_CREATE" }
+]
+
+[vars]
+# Comma-separated browser origins allowed to call this worker.
+# Add the production site origin(s) here after deciding hosting (Netlify/Vercel/GitHub Pages).
+ALLOWED_ORIGINS = "http://localhost:8765,http://127.0.0.1:8765"
+GEMINI_MODEL = "gemini-2.5-flash"
+RATE_PER_MIN = "8"     # per-IP grading requests per minute
+RATE_PER_DAY = "300"   # global grading requests per day (protects the free Gemini quota)
