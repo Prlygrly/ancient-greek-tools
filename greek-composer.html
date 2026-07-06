@@ -515,7 +515,7 @@ function classifySub(u, a){
 // Overridable for local dev: localStorage 'greek-composer.v1.workerUrl'.
 var WORKER_URL = 'https://greek-composer-worker.prlygrly.workers.dev';
 try{ WORKER_URL = localStorage.getItem('greek-composer.v1.workerUrl') || WORKER_URL; }catch(e){}
-var GEMINI_MODEL = 'gemini-2.5-flash';
+var GEMINI_MODEL = 'gemini-3.1-flash-lite'; // best free-tier RPD as of 2026-07
 var SETTINGS_KEY = 'greek-composer.v1.settings';
 var KEY_STORE = 'greek-composer.v1.gemini-key';
 
