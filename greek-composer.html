@@ -173,6 +173,18 @@ header p{font-size:14px;color:var(--ink-faint)}
 .set-status.err{color:var(--accent)}
 .fb-ai-note{font-size:12px;color:var(--ink-faint);font-style:italic;margin-top:8px}
 
+/* ── AI rubric ── */
+.rubric{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.rub-row{display:flex;gap:10px;align-items:flex-start}
+.rub-mark{flex:0 0 22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:13px;font-weight:700;margin-top:1px}
+.rub-yes{background:var(--correct-soft);color:var(--correct)}
+.rub-partly{background:var(--warn-soft);color:var(--warn)}
+.rub-no{background:var(--accent-soft);color:var(--accent)}
+.rub-label{font-size:13px;font-weight:700;color:var(--ink)}
+.rub-note{font-size:14px;color:var(--ink-light);line-height:1.55}
+.rub-better{border-left:3px solid var(--correct);background:var(--correct-soft);border-radius:0 8px 8px 0;padding:8px 12px;margin-top:2px}
+.rub-better .rub-label{color:var(--correct)}
+
 /* ── tutorial ── */
 .tut-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:24px 24px 20px;transition:background .35s}
 .tut-step{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:8px}
@@ -549,16 +561,49 @@ function buildGradingPrompt(q, userAnswer){
   lines.push(userAnswer);
   lines.push('ANSWER>>>');
   lines.push('');
-  lines.push('Score 0-100: 100 = fully correct including accents and breathings; minor accent/breathing slips ~85-95; right meaning with grammar mistakes (wrong endings, agreement, word order) ~50-80; wrong meaning, wrong language, or not a complete sentence scores low.');
-  lines.push('Feedback: 2-4 short sentences in English, beginner-friendly and encouraging. Point at the specific spelling, accent/breathing, ending, or word-order issues, quoting the Greek. If the answer is not a complete sentence, say so.');
+  lines.push('Give an overall score 0-100 (100 = fully correct including accents and breathings; diacritic-only slips ~85-95; right meaning with real grammar mistakes ~50-80; wrong meaning or not a sentence lower).');
+  lines.push('Then fill in a rubric. Each part gets ok = "yes" | "partly" | "no" plus a short note (1-2 beginner-friendly English sentences, quoting the Greek):');
+  lines.push('- sentence: is it a complete Greek sentence?');
+  lines.push('- spelling: are the words spelled correctly, INCLUDING accents and breathing marks? CRITICAL: compare the base letters first. If the letters are right and only an accent or breathing mark is missing or wrong (e.g. ανηρ for ἀνήρ), say exactly that — it is a diacritic slip, NOT a case or ending error. Only diagnose a case/ending problem when the actual letters of the ending differ.');
+  lines.push('- meaning: do word choice and word order convey a correct answer? If the student attempted words or constructions beyond the model answers (e.g. adding καί for "also", or an extra predicate), briefly confirm whether each is used correctly — students often experiment and want to know if it landed.');
+  lines.push('- better: if a more natural or more correct Ancient Greek phrasing exists, give it and explain in one sentence why it is better; otherwise return an empty string.');
+  lines.push('Be encouraging and never invent errors: only mention a problem you can point to in the Greek.');
   return lines.join('\n');
 }
 
-function cleanLLMResult(score, feedback){
-  var sc = Math.max(0, Math.min(100, Math.round(Number(score))));
-  var fb = String(feedback || '').slice(0, 2000);
-  if(isNaN(sc) || !fb) return null;
-  return { ok: true, score: sc, feedback: fb };
+var RUBRIC_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    score: { type: 'INTEGER' },
+    sentence_ok: { type: 'STRING', enum: ['yes', 'partly', 'no'] },
+    sentence_note: { type: 'STRING' },
+    spelling_ok: { type: 'STRING', enum: ['yes', 'partly', 'no'] },
+    spelling_note: { type: 'STRING' },
+    meaning_ok: { type: 'STRING', enum: ['yes', 'partly', 'no'] },
+    meaning_note: { type: 'STRING' },
+    better: { type: 'STRING' }
+  },
+  required: ['score', 'sentence_ok', 'sentence_note', 'spelling_ok',
+             'spelling_note', 'meaning_ok', 'meaning_note', 'better']
+};
+
+function cleanOk(v){
+  return v === 'yes' || v === 'partly' || v === 'no' ? v : 'partly';
+}
+function cleanLLMResult(parsed){
+  if(!parsed) return null;
+  var sc = Math.max(0, Math.min(100, Math.round(Number(parsed.score))));
+  if(isNaN(sc)) return null;
+  return {
+    ok: true,
+    score: sc,
+    rubric: {
+      sentence: { ok: cleanOk(parsed.sentence_ok), note: String(parsed.sentence_note || '').slice(0, 600) },
+      spelling: { ok: cleanOk(parsed.spelling_ok), note: String(parsed.spelling_note || '').slice(0, 600) },
+      meaning: { ok: cleanOk(parsed.meaning_ok), note: String(parsed.meaning_note || '').slice(0, 600) },
+      better: String(parsed.better || '').slice(0, 800)
+    }
+  };
 }
 
 // → null (not configured) | {ok:true, score, feedback} | {error: message}
@@ -582,7 +627,7 @@ function gradeWithLLM(q, userAnswer){
       return r.json().catch(function(){ return {}; }).then(function(data){
         if(r.status === 401) return { error: 'Wrong access password — check AI settings.' };
         if(!r.ok) return { error: data.error || ('AI grading failed (' + r.status + ').') };
-        return cleanLLMResult(data.score, data.feedback) || { error: 'AI returned an unusable reply.' };
+        return cleanLLMResult(data) || { error: 'AI returned an unusable reply.' };
       });
     }).catch(function(){
       return { error: 'Couldn’t reach the grading server.' };
@@ -602,11 +647,7 @@ function gradeWithLLM(q, userAnswer){
         maxOutputTokens: 2000,
         thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'OBJECT',
-          properties: { score: { type: 'INTEGER' }, feedback: { type: 'STRING' } },
-          required: ['score', 'feedback']
-        }
+        responseSchema: RUBRIC_SCHEMA
       }
     })
   }).then(function(r){
@@ -621,7 +662,7 @@ function gradeWithLLM(q, userAnswer){
         data.candidates[0].content.parts[0].text;
       var parsed = null;
       try{ parsed = JSON.parse(text); }catch(e){}
-      return (parsed && cleanLLMResult(parsed.score, parsed.feedback)) || { error: 'Gemini returned an unusable reply.' };
+      return cleanLLMResult(parsed) || { error: 'Gemini returned an unusable reply.' };
     });
   }).catch(function(){
     return { error: 'Couldn’t reach Gemini.' };
@@ -639,7 +680,7 @@ function grade(userRaw, q){
     if(stripMarks(uf) === stripMarks(fold(q.answers[i]))) return Promise.resolve({ tier: 2, score: 90, matched: q.answers[i] });
   }
   return gradeWithLLM(q, userRaw).then(function(llm){
-    if(llm && llm.ok) return { tier: 3, score: llm.score, feedback: llm.feedback };
+    if(llm && llm.ok) return { tier: 3, score: llm.score, rubric: llm.rubric };
     var llmError = (llm && llm.error) || '';
     if(!q.answers.length) return { tier: 5, score: null, best: null, llmError: llmError };
     // heuristic: compare against the closest accepted answer
@@ -802,10 +843,10 @@ function renderFeedback(res, q, raw){
   } else if(res.tier === 3){
     badge.className = 'fb-badge ' + (res.score >= 85 ? 'good' : res.score >= 60 ? 'marks' : 'try');
     badge.textContent = res.score + '%';
-    msg.textContent = res.score >= 85 ? 'Very close — see the feedback.' : 'See the feedback below.';
+    msg.textContent = res.score >= 85 ? 'Very close — see the rubric.' : 'See the rubric below.';
     caveat.textContent = 'AI-generated feedback — it can make mistakes.';
     caveat.style.display = '';
-    detail.appendChild(el('div', 'greek-feedback', res.feedback));
+    detail.appendChild(buildRubric(res.rubric));
   } else if(res.score === null){
     badge.className = 'fb-badge try'; badge.textContent = '—';
     msg.textContent = 'No stored answers for this question.';
@@ -832,6 +873,29 @@ function renderFeedback(res, q, raw){
   $('feedback').classList.add('show');
   $('nextBtn').textContent = (cur.idx + 1 >= cur.mod.questions.length) ? 'Finish' : 'Next →';
   $('nextBtn').focus();
+}
+
+var RUBRIC_MARKS = { yes: '✓', partly: '~', no: '✗' };
+function buildRubric(rubric){
+  var wrap = el('div', 'rubric');
+  [['Complete sentence', rubric.sentence],
+   ['Spelling, accents & breathings', rubric.spelling],
+   ['Word order & meaning', rubric.meaning]].forEach(function(pair){
+    var row = el('div', 'rub-row');
+    row.appendChild(el('span', 'rub-mark rub-' + pair[1].ok, RUBRIC_MARKS[pair[1].ok] || '~'));
+    var body = el('div', 'rub-body');
+    body.appendChild(el('div', 'rub-label', pair[0]));
+    if(pair[1].note) body.appendChild(el('div', 'rub-note', pair[1].note));
+    row.appendChild(body);
+    wrap.appendChild(row);
+  });
+  if(rubric.better){
+    var b = el('div', 'rub-better');
+    b.appendChild(el('div', 'rub-label', 'A better way to say it'));
+    b.appendChild(el('div', 'rub-note', rubric.better));
+    wrap.appendChild(b);
+  }
+  return wrap;
 }
 
 // tier-2 detail: the model answer, highlighting graphemes whose marks differ

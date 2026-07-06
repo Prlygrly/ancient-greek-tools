@@ -122,15 +122,30 @@ function buildPrompt(b) {
   lines.push(b.userAnswer);
   lines.push('ANSWER>>>');
   lines.push('');
-  lines.push('Score 0-100: 100 = fully correct including accents and breathings; minor accent/breathing slips ~85-95; right meaning with grammar mistakes (wrong endings, agreement, word order) ~50-80; wrong meaning, wrong language, or not a complete sentence scores low.');
-  lines.push('Feedback: 2-4 short sentences in English, beginner-friendly and encouraging. Point at the specific spelling, accent/breathing, ending, or word-order issues, quoting the Greek. If the answer is not a complete sentence, say so.');
+  lines.push('Give an overall score 0-100 (100 = fully correct including accents and breathings; diacritic-only slips ~85-95; right meaning with real grammar mistakes ~50-80; wrong meaning or not a sentence lower).');
+  lines.push('Then fill in a rubric. Each part gets ok = "yes" | "partly" | "no" plus a short note (1-2 beginner-friendly English sentences, quoting the Greek):');
+  lines.push('- sentence: is it a complete Greek sentence?');
+  lines.push('- spelling: are the words spelled correctly, INCLUDING accents and breathing marks? CRITICAL: compare the base letters first. If the letters are right and only an accent or breathing mark is missing or wrong (e.g. ανηρ for ἀνήρ), say exactly that — it is a diacritic slip, NOT a case or ending error. Only diagnose a case/ending problem when the actual letters of the ending differ.');
+  lines.push('- meaning: do word choice and word order convey a correct answer? If the student attempted words or constructions beyond the model answers (e.g. adding καί for "also", or an extra predicate), briefly confirm whether each is used correctly — students often experiment and want to know if it landed.');
+  lines.push('- better: if a more natural or more correct Ancient Greek phrasing exists, give it and explain in one sentence why it is better; otherwise return an empty string.');
+  lines.push('Be encouraging and never invent errors: only mention a problem you can point to in the Greek.');
   return lines.join('\n');
+}
+
+function cleanOk(v) {
+  return v === 'yes' || v === 'partly' || v === 'no' ? v : 'partly';
 }
 
 async function callGemini(env, prompt) {
   if (env.TEST_FAKE_LLM === '1') {
     // local-dev escape hatch (.dev.vars) — never set in production
-    return { score: 82, feedback: 'TEST MODE: canned feedback; Gemini was not called.' };
+    return {
+      score: 82,
+      sentence_ok: 'yes', sentence_note: 'TEST MODE: canned rubric.',
+      spelling_ok: 'partly', spelling_note: 'TEST MODE: canned rubric.',
+      meaning_ok: 'yes', meaning_note: 'TEST MODE: canned rubric.',
+      better: ''
+    };
   }
   const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
   const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
@@ -151,8 +166,18 @@ async function callGemini(env, prompt) {
         responseMimeType: 'application/json',
         responseSchema: {
           type: 'OBJECT',
-          properties: { score: { type: 'INTEGER' }, feedback: { type: 'STRING' } },
-          required: ['score', 'feedback']
+          properties: {
+            score: { type: 'INTEGER' },
+            sentence_ok: { type: 'STRING', enum: ['yes', 'partly', 'no'] },
+            sentence_note: { type: 'STRING' },
+            spelling_ok: { type: 'STRING', enum: ['yes', 'partly', 'no'] },
+            spelling_note: { type: 'STRING' },
+            meaning_ok: { type: 'STRING', enum: ['yes', 'partly', 'no'] },
+            meaning_note: { type: 'STRING' },
+            better: { type: 'STRING' }
+          },
+          required: ['score', 'sentence_ok', 'sentence_note', 'spelling_ok',
+                     'spelling_note', 'meaning_ok', 'meaning_note', 'better']
         }
       }
     })
@@ -168,9 +193,14 @@ async function callGemini(env, prompt) {
   if (!text) throw new Error('no text in upstream response');
   const parsed = JSON.parse(text);
   const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score))));
-  const feedback = String(parsed.feedback || '').slice(0, 2000);
-  if (isNaN(score) || !feedback) throw new Error('bad fields in upstream JSON');
-  return { score, feedback };
+  if (isNaN(score)) throw new Error('bad score in upstream JSON');
+  return {
+    score,
+    sentence_ok: cleanOk(parsed.sentence_ok), sentence_note: String(parsed.sentence_note || '').slice(0, 600),
+    spelling_ok: cleanOk(parsed.spelling_ok), spelling_note: String(parsed.spelling_note || '').slice(0, 600),
+    meaning_ok: cleanOk(parsed.meaning_ok), meaning_note: String(parsed.meaning_note || '').slice(0, 600),
+    better: String(parsed.better || '').slice(0, 800)
+  };
 }
 
 export default {
