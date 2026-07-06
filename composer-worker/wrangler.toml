@@ -15,6 +15,7 @@ kv_namespaces = [
 # Comma-separated browser origins allowed to call this worker.
 # Add the production site origin(s) here after deciding hosting (Netlify/Vercel/GitHub Pages).
 ALLOWED_ORIGINS = "http://localhost:8765,http://127.0.0.1:8765"
-GEMINI_MODEL = "gemini-3.1-flash-lite"   # 500 RPD free tier (vs 20 for 2.5/3 flash) per user's AI Studio dashboard, 2026-07
+GEMINI_MODEL = "gemini-3.1-flash-lite"     # per-question model: 500 RPD free tier (AI Studio dashboard, 2026-07)
+GEMINI_MODEL_BATCH = "gemini-3-flash"      # whole-module batch model: smarter, 20 RPD free — 1 request grades a whole module
 RATE_PER_MIN = "8"     # per-IP grading requests per minute
 RATE_PER_DAY = "300"   # global grading requests per day (protects the free Gemini quota)
