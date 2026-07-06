@@ -597,7 +597,10 @@ function gradeWithLLM(q, userAnswer){
       contents: [{ parts: [{ text: buildGradingPrompt(q, userAnswer) }] }],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 1200,
+        // thinking models spend maxOutputTokens on thoughts — disable, or the
+        // JSON reply comes back truncated
+        maxOutputTokens: 2000,
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: 'OBJECT',

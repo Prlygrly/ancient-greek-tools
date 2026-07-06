@@ -143,7 +143,11 @@ async function callGemini(env, prompt) {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 1200,
+        // 2.5-flash is a thinking model: thought tokens count against
+        // maxOutputTokens, so give headroom AND turn thinking off — without
+        // this the JSON reply gets truncated mid-string.
+        maxOutputTokens: 2000,
+        thinkingConfig: { thinkingBudget: 0 },
         responseMimeType: 'application/json',
         responseSchema: {
           type: 'OBJECT',
