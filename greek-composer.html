@@ -117,7 +117,7 @@ header p{font-size:14px;color:var(--ink-faint)}
 .fb-models{margin-top:12px;padding-top:10px;border-top:1px dashed var(--card-border)}
 .fb-models-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);margin-bottom:4px}
 .fb-models .greek{display:block;font-family:'Noto Serif',serif;font-size:17px;color:var(--correct);line-height:1.7}
-.fb-next-row{margin-top:14px;display:flex;justify-content:flex-end}
+.fb-next-row{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 
 /* ── summary ── */
 .sum-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:32px 24px;text-align:center;transition:background .35s}
@@ -283,7 +283,10 @@ header p{font-size:14px;color:var(--ink-faint)}
     </div>
     <div class="fb-caveat" id="fbCaveat" style="display:none"></div>
     <div class="fb-detail" id="fbDetail"></div>
-    <div class="fb-next-row"><button class="btn" id="nextBtn" onclick="nextQuestion()">Next &#8594;</button></div>
+    <div class="fb-next-row">
+      <button class="btn-ghost" onclick="retryQuestion()">Try again</button>
+      <button class="btn" id="nextBtn" onclick="nextQuestion()">Next &#8594;</button>
+    </div>
   </div>
 
   <div class="ref-section">
@@ -945,6 +948,12 @@ function buildHeuristicDetail(best){
   if(matched) wrap.appendChild(el('div', '', matched + ' word' + (matched === 1 ? '' : 's') + ' matched.'));
   if(list.children.length) wrap.appendChild(list);
   return wrap;
+}
+
+// re-ask the same question; a new submission overwrites the saved score
+function retryQuestion(){
+  if(!cur) return;
+  showQuestion();
 }
 
 function nextQuestion(){
