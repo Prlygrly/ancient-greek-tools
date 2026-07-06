@@ -498,7 +498,7 @@ function classifySub(u, a){
 // ═══════ AI GRADING ═══════
 // Set after the worker is deployed (npx wrangler deploy in composer-worker/).
 // Overridable for local dev: localStorage 'greek-composer.v1.workerUrl'.
-var WORKER_URL = '';
+var WORKER_URL = 'https://greek-composer-worker.prlygrly.workers.dev';
 try{ WORKER_URL = localStorage.getItem('greek-composer.v1.workerUrl') || WORKER_URL; }catch(e){}
 var GEMINI_MODEL = 'gemini-2.5-flash';
 var SETTINGS_KEY = 'greek-composer.v1.settings';

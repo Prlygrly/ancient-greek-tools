@@ -8,7 +8,7 @@ main = "src/index.js"
 compatibility_date = "2026-07-01"
 
 kv_namespaces = [
-  { binding = "RATE_KV", id = "REPLACE_AFTER_KV_CREATE" }
+  { binding = "RATE_KV", id = "da50e82b4d67416697c2ee78bdb4b770" }
 ]
 
 [vars]
