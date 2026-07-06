@@ -170,6 +170,9 @@ header p{font-size:14px;color:var(--ink-faint)}
 .set-choice{margin-top:10px}
 .set-choice label{display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:var(--ink-light);margin-top:6px;cursor:pointer}
 .set-choice input{margin-top:3px}
+.set-usage{font-size:12px;color:var(--ink-faint);margin-top:8px;min-height:16px}
+.rev-usage{font-size:12px;color:var(--ink-faint);margin-top:10px;text-align:left}
+.rev-score.good{color:var(--correct)}
 
 /* ── batch review ── */
 .rev-item{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:16px 18px;margin-top:14px;text-align:left;transition:background .35s}
@@ -258,7 +261,7 @@ header p{font-size:14px;color:var(--ink-faint)}
 <!-- ═══════ QUIZ ═══════ -->
 <div class="screen" id="screenQuiz">
   <div class="quiz-top">
-    <button class="quiz-back" onclick="backHome()">&#8592; Modules</button>
+    <button class="quiz-back" id="quizBackBtn" onclick="onQuizBack()">&#8592; Modules</button>
     <div class="quiz-modname" id="quizModName"></div>
     <div class="quiz-count" id="quizCount"></div>
   </div>
@@ -335,9 +338,10 @@ header p{font-size:14px;color:var(--ink-faint)}
         <div class="set-sub">For friends of the author &mdash; answers are graded through the author's AI. Ask them for the password.</div>
         <input type="password" class="set-input" id="setPassword" placeholder="Access password" autocomplete="off">
         <div class="set-choice">
-          <label><input type="radio" name="pwGradeMode" value="perq"> <span><strong>Quick</strong> &mdash; each question graded as you answer it (lighter AI; uses the shared daily budget faster)</span></label>
-          <label><input type="radio" name="pwGradeMode" value="batch"> <span><strong>Thorough</strong> &mdash; the whole module graded together at the end (smarter AI; one request per module)</span></label>
+          <label><input type="radio" name="pwGradeMode" value="perq"> <span><strong>Quick</strong> &mdash; each question graded as you answer it. Lighter AI model; every answer spends one of the <strong>500 shared requests per day</strong>.</span></label>
+          <label><input type="radio" name="pwGradeMode" value="batch"> <span><strong>Thorough</strong> &mdash; the whole module graded together at the end. Smarter AI model with only <strong>20 shared uses per day</strong> &mdash; but a whole module costs just one.</span></label>
         </div>
+        <div class="set-usage" id="setUsage"></div>
       </div>
     </div>
     <div class="set-opt" id="optByok" onclick="pickMode('byok')">
@@ -765,7 +769,9 @@ function gradeWithLLM(q, userAnswer){
       questionNote: q.note || ''
     }).then(function(res){
       if(res.error) return { error: res.error };
-      return cleanLLMResult(res.data) || { error: 'AI returned an unusable reply.' };
+      var r = cleanLLMResult(res.data);
+      if(r) r.usage = res.data.usage || null;
+      return r || { error: 'AI returned an unusable reply.' };
     });
   }
 
@@ -796,7 +802,7 @@ function gradeBatchLLM(items, moduleNote){
     return workerFetch({ items: items, moduleNote: moduleNote || '' }).then(function(res){
       if(res.error) return { error: res.error };
       var results = cleanArray(res.data && res.data.results);
-      return results ? { ok: true, results: results } : { error: 'AI returned an unusable reply.' };
+      return results ? { ok: true, results: results, usage: res.data.usage || null } : { error: 'AI returned an unusable reply.' };
     });
   }
 
@@ -816,6 +822,12 @@ function gradeBatchLLM(items, moduleNote){
 }
 
 // grade → { tier, score, matched?, best? }
+// the article is optional in an answer — never flag it missing or extra
+// (all cases, matched accent-insensitively after folding)
+var ARTICLE_FORMS = { 'ο':1,'η':1,'το':1,'τα':1,'οι':1,'αι':1,'του':1,'της':1,'των':1,
+                      'τω':1,'τη':1,'τοις':1,'ταις':1,'τον':1,'την':1,'τους':1,'τας':1 };
+function isArticle(tok){ return ARTICLE_FORMS[stripMarks(tok)] === 1; }
+
 // local word-alignment comparison against the closest accepted answer
 function heuristicGrade(uf, q){
   if(!q.answers.length) return { tier: 5, score: null, best: null };
@@ -826,6 +838,13 @@ function heuristicGrade(uf, q){
     var norm = al.cost / Math.max(aToks.length, 1);
     if(!best || norm < best.norm) best = { answer: q.answers[k], ops: al.ops, norm: norm, aCount: aToks.length };
   }
+  var droppedArticles = 0;
+  best.ops = best.ops.filter(function(op){
+    if(op.type === 'miss' && isArticle(op.a)){ droppedArticles++; return false; }
+    if(op.type === 'extra' && isArticle(op.u)) return false;
+    return true;
+  });
+  best.aCount = Math.max(1, best.aCount - droppedArticles);
   var pts = 0;
   best.ops.forEach(function(op){
     if(op.type === 'match') pts += 1;
@@ -854,7 +873,7 @@ function grade(userRaw, q){
     return Promise.resolve(h);
   }
   return gradeWithLLM(q, userRaw).then(function(llm){
-    if(llm && llm.ok) return { tier: 3, score: llm.score, rubric: llm.rubric };
+    if(llm && llm.ok) return { tier: 3, score: llm.score, rubric: llm.rubric, usage: llm.usage };
     var h2 = heuristicGrade(uf, q);
     h2.llmError = (llm && llm.error) || '';
     return h2;
@@ -1002,9 +1021,32 @@ function pendingIdxs(){
 
 function updateGradeNowBtn(){
   var n = pendingIdxs().length;
+  // BYOK users may spend their own quota early; on the shared key the only
+  // early-grade path is exiting the module — a deliberate consequence, so
+  // nobody burns the 20 daily thorough uses by grading after every question
   var b = $('gradeNowBtn');
-  b.style.display = (inBatchMode() && n) ? '' : 'none';
+  b.style.display = (inBatchMode() && n && settings.mode === 'byok') ? '' : 'none';
   b.textContent = 'Grade ' + n + ' pending now';
+  var back = $('quizBackBtn');
+  back.disabled = false;
+  back.textContent = (inBatchMode() && n && settings.mode === 'password')
+    ? '← Exit & grade (' + n + ')'
+    : '← Modules';
+}
+
+function onQuizBack(){
+  var n = pendingIdxs().length;
+  if(inBatchMode() && n && settings.mode === 'password'){
+    var b = $('quizBackBtn');
+    b.disabled = true;
+    b.textContent = 'Grading…';
+    runBatchGrade().then(function(res){
+      b.disabled = false;
+      showReview(res.error, true);
+    });
+    return;
+  }
+  backHome();
 }
 
 function renderFeedback(res, q, raw){
@@ -1013,18 +1055,18 @@ function renderFeedback(res, q, raw){
   caveat.style.display = 'none';
 
   if(res.tier === 1){
-    badge.className = 'fb-badge good'; badge.textContent = '100%';
+    badge.className = 'fb-badge good'; badge.textContent = '100% ⭐';
     msg.textContent = PRAISE[Math.floor(Math.random() * PRAISE.length)] + ' Exactly right.';
   } else if(res.tier === 2){
-    badge.className = 'fb-badge marks'; badge.textContent = '90%';
+    badge.className = 'fb-badge good'; badge.textContent = '90% ⭐';
     msg.textContent = 'Right words — check the marks.';
     detail.appendChild(el('div', '', 'Model answer with the differing marks highlighted:'));
     detail.appendChild(buildMarkDiff(raw, res.matched));
   } else if(res.tier === 3){
-    badge.className = 'fb-badge ' + (res.score >= 85 ? 'good' : res.score >= 60 ? 'marks' : 'try');
-    badge.textContent = res.score + '%';
+    badge.className = 'fb-badge ' + badgeCls(res.score);
+    badge.textContent = badgeText(res.score, false);
     msg.textContent = res.score >= 85 ? 'Very close — see the rubric.' : 'See the rubric below.';
-    caveat.textContent = 'AI-generated feedback — it can make mistakes.';
+    caveat.textContent = 'AI-generated feedback — it can make mistakes.' + usageLine(res.usage);
     caveat.style.display = '';
     detail.appendChild(buildRubric(res.rubric));
   } else if(res.score === null){
@@ -1035,7 +1077,8 @@ function renderFeedback(res, q, raw){
       : 'This question can only be graded with AI (see AI grading on the home screen). Compare with your book.'));
     if(res.llmError) detail.appendChild(el('div', 'fb-ai-note', 'AI: ' + res.llmError));
   } else {
-    badge.className = 'fb-badge try'; badge.textContent = '~' + res.score + '%';
+    badge.className = 'fb-badge ' + badgeCls(res.score);
+    badge.textContent = badgeText(res.score, true);
     msg.textContent = res.score >= 70 ? 'Close — compare below.' : 'Not quite — compare below.';
     caveat.textContent = 'Automated comparison — may be imperfect or partial.';
     caveat.style.display = '';
@@ -1058,6 +1101,16 @@ function renderFeedback(res, q, raw){
   $('feedback').classList.add('show');
   $('nextBtn').textContent = (cur.idx + 1 >= cur.mod.questions.length) ? 'Finish' : 'Next →';
   $('nextBtn').focus();
+}
+
+// scores stay encouraging: green unless the answer was barely intelligible,
+// and a star for anything 80%+
+function badgeCls(score){ return score >= 40 ? 'good' : 'marks'; }
+function badgeText(score, approx){
+  return (approx ? '~' : '') + score + '%' + (score >= 80 ? ' ⭐' : '');
+}
+function usageLine(u){
+  return u ? (' Shared use today: ' + u.quick + '/500 quick · ' + u.batch + '/20 thorough.') : '';
 }
 
 var RUBRIC_MARKS = { yes: '✓', partly: '~', no: '✗' };
@@ -1185,11 +1238,13 @@ function runBatchGrade(){
       });
       p.pending = (p.pending || []).filter(function(qi){ return !(p.aiResults && p.aiResults[qi]); });
       persistProgress();
+      lastBatchUsage = res.usage || null;
       return {};
     }
     return { error: (res && res.error) || 'AI grading failed.' };
   });
 }
+var lastBatchUsage = null;
 
 function gradePendingNow(){
   if(!cur || !pendingIdxs().length) return;
@@ -1203,23 +1258,29 @@ function gradePendingNow(){
 }
 
 // batch-mode results screen: summary card + per-question detail
-function showReview(err){
+function showReview(err, hideContinue){
   var p = progress[cur.id];
   fillSummaryCard(p);
-  $('sumContinueBtn').style.display = p.done ? 'none' : '';
+  $('sumContinueBtn').style.display = (p.done || hideContinue) ? 'none' : '';
   var list = $('reviewList');
   list.textContent = '';
   if(err){
     var banner = el('div', 'rev-banner');
     banner.appendChild(el('div', '', 'AI grading didn’t complete: ' + err));
-    banner.appendChild(el('div', 'fb-ai-note', 'Your answers stay queued — use “Grade pending now” from the module, or they’ll be graded next time you finish it.'));
+    banner.appendChild(el('div', 'fb-ai-note', 'Your answers stay queued — they’ll be graded next time this module is graded.'));
     list.appendChild(banner);
+  }
+  if(lastBatchUsage && settings.mode === 'password'){
+    list.appendChild(el('div', 'rev-usage', 'Thorough gradings used today: ' + lastBatchUsage.batch + ' of 20 (shared).'));
   }
   cur.mod.questions.forEach(function(q, i){
     if(!p.answers || p.answers[i] === undefined) return;
     var item = el('div', 'rev-item');
     var score = p.scores[i];
-    if(typeof score === 'number') item.appendChild(el('span', 'rev-score', (p.aiResults && p.aiResults[i] ? '' : '~') + score + '%'));
+    if(typeof score === 'number'){
+      item.appendChild(el('span', 'rev-score' + (score >= 40 ? ' good' : ''),
+        badgeText(score, !(p.aiResults && p.aiResults[i]) && score !== 100 && score !== 90)));
+    }
     item.appendChild(el('div', 'rev-q', q.q));
     item.appendChild(el('div', 'rev-a', p.answers[i]));
     if(p.aiResults && p.aiResults[i]){
@@ -1364,6 +1425,15 @@ function openSettings(){
   $('setRemember').checked = remembered;
   $('setStatus').textContent = '';
   $('setStatus').className = 'set-status';
+  $('setUsage').textContent = '';
+  if(settings.password && WORKER_URL){
+    fetch(WORKER_URL.replace(/\/+$/, '') + '/usage', {
+      headers: { 'Authorization': 'Bearer ' + settings.password }
+    }).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(u){
+        if(u) $('setUsage').textContent = 'Shared use today: ' + u.quick + ' of 500 quick · ' + u.batch + ' of 20 thorough.';
+      }).catch(function(){});
+  }
   refreshSettingsSelection();
   showScreen('screenSettings');
 }

@@ -90,6 +90,36 @@ function fieldStr(v, max) {
   return typeof v === 'string' && v.length <= max;
 }
 
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// daily quick/thorough upstream-request counters (so the app can show
+// "X of 500 used today"). Counts attempts, mirroring how Gemini counts RPD.
+async function trackUsage(env, batch) {
+  if (!env.RATE_KV) return null;
+  const day = todayKey();
+  const [qRaw, bRaw] = await Promise.all([
+    env.RATE_KV.get('uq:' + day),
+    env.RATE_KV.get('ub:' + day)
+  ]);
+  let quick = parseInt(qRaw || '0', 10);
+  let bat = parseInt(bRaw || '0', 10);
+  if (batch) bat++; else quick++;
+  await env.RATE_KV.put(batch ? ('ub:' + day) : ('uq:' + day), String(batch ? bat : quick), { expirationTtl: 172800 });
+  return { quick, batch: bat };
+}
+
+async function readUsage(env) {
+  if (!env.RATE_KV) return { quick: 0, batch: 0 };
+  const day = todayKey();
+  const [qRaw, bRaw] = await Promise.all([
+    env.RATE_KV.get('uq:' + day),
+    env.RATE_KV.get('ub:' + day)
+  ]);
+  return { quick: parseInt(qRaw || '0', 10), batch: parseInt(bRaw || '0', 10) };
+}
+
 function validateItem(b) {
   if (!b || typeof b !== 'object') return 'bad item';
   if (!fieldStr(b.question, MAX.question) || !b.question.trim()) return 'question missing or too long';
@@ -283,7 +313,10 @@ export default {
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (url.pathname === '/' && request.method === 'GET') return json(200, { ok: true, service: 'greek-composer-worker' }, cors);
-    if (url.pathname !== '/grade' || request.method !== 'POST') return json(404, { error: 'not found' }, cors);
+
+    const isUsage = url.pathname === '/usage' && request.method === 'GET';
+    const isGrade = url.pathname === '/grade' && request.method === 'POST';
+    if (!isUsage && !isGrade) return json(404, { error: 'not found' }, cors);
 
     // browser requests must come from an allowlisted origin
     if (origin && !cors['Access-Control-Allow-Origin']) return json(403, { error: 'origin not allowed' }, cors);
@@ -293,6 +326,8 @@ export default {
     if (!password || password.length > MAX.password || !(await passwordOk(password, env))) {
       return json(401, { error: 'wrong password' }, cors);
     }
+
+    if (isUsage) return json(200, await readUsage(env), cors);
 
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     const limited = await rateLimit(env, ip);
@@ -305,8 +340,11 @@ export default {
 
     try {
       const prompt = buildPrompt(v.items, v.moduleNote, v.batch);
+      const usage = await trackUsage(env, v.batch);
       const result = await callGemini(env, prompt, v.batch, v.items.length);
-      return json(200, v.batch ? { results: result } : result, cors);
+      const payload = v.batch ? { results: result } : result;
+      if (usage) payload.usage = usage;
+      return json(200, payload, cors);
     } catch (e) {
       console.error('grading failed:', e && e.message);
       if (e && e.quota) return json(429, { error: 'The AI’s free quota is used up for now', kind: 'quota' }, cors);
