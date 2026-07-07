@@ -170,6 +170,11 @@ header p{font-size:14px;color:var(--ink-faint)}
 .set-sub{font-size:13px;color:var(--ink-light);line-height:1.5;margin-top:2px}
 .set-input{display:block;width:100%;margin-top:10px;padding:9px 12px;font-family:'Source Sans Pro',sans-serif;font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--card-border);border-radius:7px;outline:none;transition:border-color .2s}
 .set-input:focus{border-color:var(--accent)}
+.pw-wrap{position:relative}
+.pw-wrap .set-input{padding-right:38px}
+.pw-eye{position:absolute;right:5px;bottom:5px;background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:6px;opacity:.5;color:var(--ink)}
+.pw-eye:hover{opacity:.8}
+.pw-eye[aria-pressed="true"]{opacity:1}
 .set-remember{display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:var(--ink-faint);margin-top:8px;cursor:pointer}
 .set-remember input{margin-top:3px}
 .set-choice{margin-top:10px}
@@ -341,7 +346,10 @@ header p{font-size:14px;color:var(--ink-faint)}
       <input type="radio" name="aimode" value="password">
       <div><strong>Shared access password</strong>
         <div class="set-sub">For friends of the author &mdash; answers are graded through the author's AI. Ask them for the password.</div>
-        <input type="password" class="set-input" id="setPassword" placeholder="Access password" autocomplete="off">
+        <div class="pw-wrap">
+          <input type="password" class="set-input" id="setPassword" placeholder="Access password" autocomplete="off">
+          <button type="button" class="pw-eye" onclick="togglePw('setPassword', this)" aria-label="Show password" aria-pressed="false">&#128065;</button>
+        </div>
         <div class="set-choice">
           <label><input type="radio" name="pwGradeMode" value="perq"> <span><strong>Quick</strong> &mdash; each question graded as you answer it. Lighter AI model; every answer spends one of the <strong>500 shared requests per day</strong>.</span></label>
           <label><input type="radio" name="pwGradeMode" value="batch"> <span><strong>Thorough</strong> &mdash; the whole module graded together at the end. Smarter AI model with only <strong>20 shared uses per day</strong> &mdash; but a whole module costs just one.</span></label>
@@ -353,7 +361,10 @@ header p{font-size:14px;color:var(--ink-faint)}
       <input type="radio" name="aimode" value="byok">
       <div><strong>My own Gemini API key</strong>
         <div class="set-sub">Free at aistudio.google.com &rarr; &ldquo;Get API key&rdquo;. Calls go directly from your browser to Google &mdash; the key is never sent to this site or its author.</div>
-        <input type="password" class="set-input" id="setKey" placeholder="Gemini API key" autocomplete="off">
+        <div class="pw-wrap">
+          <input type="password" class="set-input" id="setKey" placeholder="Gemini API key" autocomplete="off">
+          <button type="button" class="pw-eye" onclick="togglePw('setKey', this)" aria-label="Show API key" aria-pressed="false">&#128065;</button>
+        </div>
         <label class="set-remember"><input type="checkbox" id="setRemember"> Remember the key in this browser. Anyone using this browser profile could read it &mdash; leave unchecked on shared computers (kept only until the tab closes).</label>
         <input type="text" class="set-input" id="setModel" placeholder="Model (default: gemini-3.1-flash-lite)" autocomplete="off" spellcheck="false">
         <div class="set-choice">
@@ -499,6 +510,18 @@ function charLev(a, b){
   return prev[n];
 }
 
+// Substitution cost between two words: normalized character distance for
+// plausible variants of the same word, but unrelated words must NOT pair up —
+// a sub costs ≤1 while miss+extra costs 2, so without this floor the aligner
+// happily pairs ζεὺς→ὁ instead of reporting ὁ missing and an adjective extra.
+function wordSubCost(u, a){
+  var norm = charLev(u, a) / Math.max(u.length, a.length);
+  if(norm <= 0.6) return norm;
+  // same base letters (accents aside) are always the same word, however short
+  if(stripMarks(u) === stripMarks(a)) return norm;
+  return 2.5;
+}
+
 // Align user tokens against answer tokens (edit distance over words, where
 // substitution cost is the normalized character distance). Returns ops:
 // {type:'match'|'sub'|'miss'|'extra', u, a}
@@ -509,7 +532,7 @@ function alignTokens(uToks, aToks){
   for(j = 0; j <= n; j++) d[0][j] = j;
   for(i = 1; i <= m; i++){
     for(j = 1; j <= n; j++){
-      var subCost = charLev(uToks[i-1], aToks[j-1]) / Math.max(uToks[i-1].length, aToks[j-1].length);
+      var subCost = wordSubCost(uToks[i-1], aToks[j-1]);
       d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + subCost);
     }
   }
@@ -517,7 +540,7 @@ function alignTokens(uToks, aToks){
   i = m; j = n;
   while(i > 0 || j > 0){
     if(i > 0 && j > 0){
-      var subC = charLev(uToks[i-1], aToks[j-1]) / Math.max(uToks[i-1].length, aToks[j-1].length);
+      var subC = wordSubCost(uToks[i-1], aToks[j-1]);
       if(Math.abs(d[i][j] - (d[i-1][j-1] + subC)) < 1e-9){
         ops.unshift({ type: subC === 0 ? 'match' : 'sub', u: uToks[i-1], a: aToks[j-1] });
         i--; j--; continue;
@@ -1588,6 +1611,13 @@ function toggleRef(){
   var show = !content.classList.contains('show');
   content.classList.toggle('show', show);
   arrow.classList.toggle('open', show);
+}
+
+function togglePw(id, btn){
+  var inp = $(id), show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+  btn.setAttribute('aria-label', (show ? 'Hide ' : 'Show ') + (id === 'setKey' ? 'API key' : 'password'));
 }
 
 function toggleTheme(){
