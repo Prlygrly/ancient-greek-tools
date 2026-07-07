@@ -98,6 +98,14 @@ header p{font-size:14px;color:var(--ink-faint)}
 .hint-row{margin-top:12px;font-size:14px;color:var(--ink-light);background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:10px 14px;display:none}
 .hint-row.show{display:block}
 .hint-row .hint-greek{font-family:'Noto Serif',serif;font-size:17px}
+.playtest-toggle{color:var(--ink-faint)}
+.playtest-panel{display:none;margin-bottom:10px;background:var(--accent-soft);border:1px dashed var(--accent);border-radius:8px;padding:10px 14px;
+  -webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+.playtest-panel.show{display:block}
+.playtest-panel .pt-head{font-size:11px;color:var(--ink-faint);line-height:1.5;margin-bottom:8px}
+.playtest-panel .pt-row{margin-top:8px}
+.playtest-panel .pt-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-faint)}
+.playtest-panel .pt-latin{display:block;margin-top:2px;font-family:'Courier New',monospace;font-size:15px;color:var(--ink);letter-spacing:.5px;word-break:break-word}
 
 /* ── feedback ── */
 .feedback{display:none;margin-top:20px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:18px 20px;transition:background .35s}
@@ -281,6 +289,8 @@ header p{font-size:14px;color:var(--ink-faint)}
   <div class="q-text" id="qText"></div>
   <div class="q-question" id="qQuestion"></div>
 
+  <div class="playtest-panel" id="playtestPanel"></div>
+
   <div class="input-wrap" id="inputWrap">
     <textarea class="greek-input" id="answerInput" placeholder="Type your answer — Latin letters become Greek (try: ho anqrwpos)" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>
     <div class="diacritic-bar" aria-label="Diacritic buttons">
@@ -298,6 +308,7 @@ header p{font-size:14px;color:var(--ink-faint)}
     <button class="btn" id="submitBtn" onclick="onSubmit()">Submit</button>
     <button class="btn-ghost" id="hintBtn" onclick="showHint()" style="display:none">Hint</button>
     <button class="btn-ghost" id="gradeNowBtn" onclick="gradePendingNow()" style="display:none">Grade pending</button>
+    <button class="btn-ghost playtest-toggle" id="playtestBtn" onclick="togglePlaytest()" style="display:none">&#128295; Playtest</button>
   </div>
   <div class="hint-row" id="hintRow"></div>
 
@@ -588,6 +599,77 @@ function classifySub(u, a){
      charLev(u, a) <= Math.max(2, Math.ceil(a.length * 0.4))) return 'ending';
   if(charLev(u, a) <= Math.max(1, Math.floor(a.length / 3))) return 'spelling';
   return 'word';
+}
+
+// ═══════ PLAYTEST ASSIST ═══════
+// Dev aid: reverse-transliterate an accepted answer into the Latin keystrokes
+// that the keyboard engine converts back INTO it, so a tester can TYPE (not
+// paste) a known-good answer. Uses the same phonetic scheme the app types with:
+//   ' acute · '' grave · ~ circumflex · h rough breathing · hh smooth
+// and the engine's own letter keys (j=η, q=θ, c=χ, f=φ, y=ψ, x=ξ, w=ω).
+
+// invert the engine's letter map: Greek base char → the Latin key that types it
+var BASE_TO_LATIN = (function(){
+  var inv = {}, L = GreekKeyboard.latinToGreek;
+  for(var key in L){ if(!(L[key] in inv)) inv[L[key]] = key; }
+  inv['ς'] = 's'; // final sigma isn't in the letter map — type 's', engine finalizes
+  return inv;
+})();
+var MARK_TO_KEYS = {};
+MARK_TO_KEYS[0x0301] = "'";   MARK_TO_KEYS[0x0300] = "''";  // acute / grave (' cycles)
+MARK_TO_KEYS[0x0342] = '~';                                 // circumflex
+MARK_TO_KEYS[0x0314] = 'h';   MARK_TO_KEYS[0x0313] = 'hh';  // rough / smooth (h cycles)
+MARK_TO_KEYS[0x0345] = '|';   MARK_TO_KEYS[0x0308] = ':';   // iota subscript / diaeresis
+// marks are typed AFTER their vowel, in this order (matches the engine's cycles)
+var MARK_ORDER = [0x0314, 0x0313, 0x0301, 0x0300, 0x0342, 0x0345, 0x0308];
+
+function reverseTranslit(greek){
+  var gs = graphemes(greek.normalize('NFC')), out = '';
+  for(var i = 0; i < gs.length; i++){
+    var nfd = gs[i].normalize('NFD');
+    var latin = BASE_TO_LATIN[nfd[0]];
+    if(latin === undefined){ out += nfd[0]; continue; } // space, comma, etc. pass through
+    out += latin;
+    var present = {};
+    for(var j = 1; j < nfd.length; j++) present[nfd.charCodeAt(j)] = 1;
+    for(var k = 0; k < MARK_ORDER.length; k++){
+      if(present[MARK_ORDER[k]]) out += MARK_TO_KEYS[MARK_ORDER[k]];
+    }
+  }
+  return out;
+}
+
+function foldStrip(s){ return stripMarks(fold(s)); }
+function ptTokenize(s){ return s.trim().replace(/[.,·;!]+$/, '').split(/\s+/).filter(Boolean); }
+var COPULA_BASES = { 'εστι': 1, 'εστιν': 1, 'εισι': 1, 'εισιν': 1 };
+var LEAD_ARTICLES = { 'ο': 1, 'η': 1, 'το': 1, 'οι': 1, 'αι': 1, 'τα': 1 };
+function findCopula(toks){ for(var i = 0; i < toks.length; i++){ if(COPULA_BASES[foldStrip(toks[i])] === 1) return i; } return -1; }
+
+// the fullest accepted answer (most tokens = most complete sentence)
+function fullestAnswer(answers){
+  var best = answers[0], bestN = ptTokenize(answers[0]).length;
+  for(var i = 1; i < answers.length; i++){
+    var n = ptTokenize(answers[i]).length;
+    if(n > bestN){ best = answers[i]; bestN = n; }
+  }
+  return best;
+}
+
+// a still-grammatical rearrangement of the fullest answer that does NOT match
+// any accepted answer, so it lands on the AI path. null if nothing distinct.
+function makeCreativeVariant(q, exact){
+  var toks = ptTokenize(exact), vi = findCopula(toks), cands = [];
+  if(vi > 0){ var a = toks.slice(); a.unshift(a.splice(vi, 1)[0]); cands.push(a); }      // copula → front
+  if(vi >= 0 && vi < toks.length - 1){ var b = toks.slice(); b.push(b.splice(vi, 1)[0]); cands.push(b); } // copula → end
+  if(LEAD_ARTICLES[foldStrip(toks[0])] === 1) cands.push(toks.slice(1));                  // drop leading article
+  var exf = foldStrip(exact);
+  for(var i = 0; i < cands.length; i++){
+    var s = cands[i].join(' '), sf = foldStrip(s), collides = false;
+    if(sf === exf) continue;
+    for(var j = 0; j < q.answers.length; j++){ if(foldStrip(q.answers[j]) === sf){ collides = true; break; } }
+    if(!collides) return s;
+  }
+  return null;
 }
 
 // ═══════ AI GRADING ═══════
@@ -1020,6 +1102,9 @@ function showQuestion(){
   kb.clearPending();
   awaitingNext = false;
   updateGradeNowBtn();
+  // playtest assist: gated button; refresh the panel for this question if open
+  $('playtestBtn').style.display = playtestEnabled() ? '' : 'none';
+  if($('playtestPanel').classList.contains('show')) buildPlaytestPanel();
   inp.focus();
 }
 
@@ -1638,6 +1723,41 @@ function toggleRef(){
   var show = !content.classList.contains('show');
   content.classList.toggle('show', show);
   arrow.classList.toggle('open', show);
+}
+
+// ── Playtest assist panel (gated by localStorage flag so learners don't see it)
+function playtestEnabled(){
+  try{ return localStorage.getItem('greek-composer.v1.playtest') === '1'; }catch(e){ return false; }
+}
+function buildPlaytestPanel(){
+  var panel = $('playtestPanel');
+  panel.textContent = '';
+  var q = cur && cur.mod.questions[cur.idx];
+  if(!q) return;
+  panel.appendChild(el('div', 'pt-head',
+    'Playtest hints — type these in (not selectable). Scheme: ’ acute · ’’ grave · ~ circumflex · h rough · hh smooth.'));
+  if(!q.answers.length){
+    panel.appendChild(el('div', 'pt-row', '(No stored answers — AI-only question.)'));
+    return;
+  }
+  var exact = fullestAnswer(q.answers);
+  addPtRow(panel, 'Exact — instant 100%, no AI', reverseTranslit(exact));
+  var creative = makeCreativeVariant(q, exact);
+  if(creative) addPtRow(panel, 'Creative — graded by AI', reverseTranslit(creative));
+}
+function addPtRow(panel, label, latin){
+  var row = el('div', 'pt-row');
+  row.appendChild(el('div', 'pt-label', label));
+  row.appendChild(el('div', 'pt-latin', latin));
+  panel.appendChild(row);
+}
+function togglePlaytest(){
+  var panel = $('playtestPanel');
+  var show = !panel.classList.contains('show');
+  panel.classList.toggle('show', show);
+  if(show) buildPlaytestPanel();
+  $('playtestBtn').textContent = show ? '🔧 Hide playtest' : '🔧 Playtest';
+  $('answerInput').focus();
 }
 
 function togglePw(id, btn){
