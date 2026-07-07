@@ -49,3 +49,26 @@ A: ὁ Δικαιόπολις ἐν τοῖς ἀγροῖς οἰκεῖ.
 A: ἐν τοῖς ἀγροῖς οἰκεῖ.
 A: οἰκεῖ ἐν τοῖς ἀγροῖς.
 NOTE: He lives in the fields/country, not in Athens. Require a full sentence.
+
+## Your questions
+
+<!-- Copy/paste this blank block for each new question, fill it in, and delete
+     any unused A: lines (keep at least one). -->
+
+Q:
+A:
+A:
+A:
+NOTE: Answer should be a full sentence.
+
+Q:
+A:
+A:
+A:
+NOTE: Answer should be a full sentence.
+
+Q:
+A:
+A:
+A:
+NOTE: Answer should be a full sentence.
