@@ -71,7 +71,7 @@ async function rateLimit(env, ip) {
   if (!env.RATE_KV) return null;
   const now = Date.now();
   const minuteKey = 'm:' + ip + ':' + Math.floor(now / 60000);
-  const dayKey = 'd:' + new Date(now).toISOString().slice(0, 10);
+  const dayKey = 'd:' + todayKey();
   const perMin = parseInt(env.RATE_PER_MIN || '8', 10);
   const perDay = parseInt(env.RATE_PER_DAY || '300', 10);
   const [mRaw, dRaw] = await Promise.all([env.RATE_KV.get(minuteKey), env.RATE_KV.get(dayKey)]);
@@ -91,7 +91,9 @@ function fieldStr(v, max) {
 }
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  // US-Pacific date (DST-aware), so usage counters and the daily cap roll
+  // over together with Gemini's free-tier quota day
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 }
 
 // daily quick/thorough upstream-request counters (so the app can show

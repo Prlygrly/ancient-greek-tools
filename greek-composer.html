@@ -686,13 +686,8 @@ function cleanLLMResult(parsed){
 // friendly rate-limit text: tell the user WHEN it resets, not just that it failed
 function limitMessage(kind, fallback){
   if(kind === 'minute') return 'Rate limit — wait a minute and try again.';
-  if(kind === 'day'){
-    var now = new Date();
-    var reset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-    return 'The shared daily grading limit is used up — it resets at midnight UTC (' +
-      reset.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' your time).';
-  }
-  if(kind === 'quota') return 'The AI’s free daily quota is used up — it usually resets at midnight US-Pacific time.';
+  if(kind === 'day') return 'The shared daily grading limit is used up — it resets at midnight US-Pacific time, same as the AI quota.';
+  if(kind === 'quota') return 'The AI’s free daily quota is used up — it resets at midnight US-Pacific time.';
   return fallback || 'AI grading failed.';
 }
 
