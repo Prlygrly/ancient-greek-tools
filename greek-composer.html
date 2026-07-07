@@ -510,12 +510,18 @@ function charLev(a, b){
   return prev[n];
 }
 
+// negation forms are one word for grading: οὐ/οὐκ/οὐχ(ί) vary only by what
+// follows, so pair them up instead of reporting "missing οὐ / extra οὐκ"
+var NEG_FORMS = { 'ου': 1, 'ουκ': 1, 'ουχ': 1, 'ουχι': 1 };
+function isNegation(tok){ return NEG_FORMS[stripMarks(tok)] === 1; }
+
 // Substitution cost between two words: normalized character distance for
 // plausible variants of the same word, but unrelated words must NOT pair up —
 // a sub costs ≤1 while miss+extra costs 2, so without this floor the aligner
 // happily pairs ζεὺς→ὁ instead of reporting ὁ missing and an adjective extra.
 function wordSubCost(u, a){
   var norm = charLev(u, a) / Math.max(u.length, a.length);
+  if(isNegation(u) && isNegation(a)) return Math.min(norm, 0.4);
   if(norm <= 0.6) return norm;
   // same base letters (accents aside) are always the same word, however short
   if(stripMarks(u) === stripMarks(a)) return norm;
@@ -565,6 +571,7 @@ function isConfusablePair(a, b){
 function classifySub(u, a){
   var su = stripMarks(u), sa = stripMarks(a);
   if(su === sa) return 'marks';
+  if(isNegation(u) && isNegation(a)) return 'spelling';
   if(su.length === sa.length){
     var anyDiff = false, confOnly = true;
     for(var ci = 0; ci < su.length; ci++){
@@ -630,7 +637,7 @@ function rubricRules(batch){
     'Overall score 0-100: fully correct incl. accents/breathings = 100; diacritic-only slips 85-95; right meaning with real grammar errors 50-80; wrong meaning or not a sentence lower.',
     'Rubric — each part gets ok = "yes"|"partly"|"no" plus a 1-2 sentence beginner-friendly English note quoting the Greek:',
     '- sentence: is it a complete Greek sentence?',
-    '- spelling: words spelled correctly incl. accents and breathings? For EVERY corrected word show student form → corrected form (φιλοσοφος → φιλόσοφος). Name only marks actually wrong or missing — verify each in the student’s form first. If the base letters are right and only a mark is off, it is a diacritic slip, never a case/ending error; diagnose endings only when the letters themselves differ.',
+    '- spelling: words spelled correctly incl. accents and breathings? For EVERY corrected word show student form → corrected form (φιλοσοφος → φιλόσοφος). Name only marks actually wrong or missing — verify each in the student’s form first, and if the student form and your corrected form are identical strings, do not list that word at all. Breathings sit only on a word-initial vowel/diphthong or ρ; a word starting with any other consonant never takes one. If the base letters are right and only a mark is off, it is a diacritic slip, never a case/ending error; diagnose endings only when the letters themselves differ.',
     '- meaning: do word choice and order answer the question? If the student attempted words beyond the model answers (e.g. καί for "also"), say whether each landed — students experiment and want to know.',
     '- better: a more natural or more correct phrasing AT THE STUDENT’S LEVEL, with a one-sentence why. Known vocab = module guidance + any word the student used (if they wrote it, build on it, corrected as needed) + words in the question/model answers. Words outside that only with an inline gloss and flag: Ἕλλην (= a Greek; new word). Empty string if nothing better exists at their level.',
     'Be encouraging; never invent errors — mention only problems you can point to in the Greek.'
@@ -744,13 +751,16 @@ function geminiDirect(prompt, schema, count){
   var genCfg = {
     temperature: 0.2,
     // thinking models spend maxOutputTokens on thoughts — keep headroom
-    maxOutputTokens: count > 1 ? Math.min(8000, 800 + 400 * count) : 2000,
+    maxOutputTokens: count > 1 ? Math.min(16000, 1500 + 700 * count) : 3000,
     responseMimeType: 'application/json',
     responseSchema: schema
   };
-  // thinkingBudget is a 2.5-family knob (0 = off, prevents truncated JSON);
-  // newer model families reject it
+  // thinking control differs by family (and the knobs are mutually exclusive):
+  // 2.5 takes thinkingBudget (0 = off); 3.x takes thinkingLevel and defaults
+  // to HIGH, whose thought tokens count against maxOutputTokens and truncate
+  // the JSON reply — LOW is plenty for rubric grading
   if(model.indexOf('gemini-2.5') === 0) genCfg.thinkingConfig = { thinkingBudget: 0 };
+  else if(model.indexOf('gemini-3') === 0) genCfg.thinkingConfig = { thinkingLevel: 'LOW' };
   return fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': getGeminiKey() },
@@ -851,12 +861,20 @@ var ARTICLE_FORMS = { 'ο':1,'η':1,'το':1,'τα':1,'οι':1,'αι':1,'του'
                       'τω':1,'τη':1,'τοις':1,'ταις':1,'τον':1,'την':1,'τους':1,'τας':1 };
 function isArticle(tok){ return ARTICLE_FORMS[stripMarks(tok)] === 1; }
 
+// a leading yes/no interjection is fine whether or not the model answer has
+// one — Ναί, … or Οὐδαμῶς, … followed by a full sentence should never cost
+// points against an answer written without it (and vice versa)
+var LEAD_INTERJECTIONS = { 'ναι': 1, 'ουδαμωσ': 1, 'μαλιστα': 1 };
+function dropLeadInterjection(toks){
+  return (toks.length > 1 && LEAD_INTERJECTIONS[stripMarks(toks[0])] === 1) ? toks.slice(1) : toks;
+}
+
 // local word-alignment comparison against the closest accepted answer
 function heuristicGrade(uf, q){
   if(!q.answers.length) return { tier: 5, score: null, best: null };
-  var uToks = uf.split(' '), best = null;
+  var uToks = dropLeadInterjection(uf.split(' ')), best = null;
   for(var k = 0; k < q.answers.length; k++){
-    var aToks = fold(q.answers[k]).split(' ');
+    var aToks = dropLeadInterjection(fold(q.answers[k]).split(' '));
     var al = alignTokens(uToks, aToks);
     var norm = al.cost / Math.max(aToks.length, 1);
     if(!best || norm < best.norm) best = { answer: q.answers[k], ops: al.ops, norm: norm, aCount: aToks.length };
@@ -971,7 +989,11 @@ function startModule(id, resume){
     progress[id] = p;
     persistProgress();
   }
-  cur = { id: id, mod: entry.mod, idx: Math.min(p.idx, entry.mod.questions.length - 1) };
+  // resume onto the first ungraded question — an answer graded without a
+  // 'Next' click before leaving still counts as answered
+  var idx = p.idx;
+  while(idx < entry.mod.questions.length && p.scores && p.scores[idx] !== undefined) idx++;
+  cur = { id: id, mod: entry.mod, idx: Math.min(idx, entry.mod.questions.length - 1) };
   $('quizModName').textContent = entry.mod.title;
   showScreen('screenQuiz');
   showQuestion();
@@ -1014,7 +1036,9 @@ function showHint(){
 function onSubmit(){
   if(awaitingNext || !cur) return;
   var q = cur.mod.questions[cur.idx];
-  var raw = $('answerInput').value.trim();
+  // canonical Unicode before anything downstream sees it (storage, AI, diffs) —
+  // it must never matter which key sequence produced a mark
+  var raw = $('answerInput').value.normalize('NFC').trim();
   if(!raw) return;
   $('submitBtn').disabled = true;
   grade(raw, q).then(function(res){
@@ -1160,25 +1184,28 @@ function buildRubric(rubric){
 }
 
 // tier-2 detail: the model answer, highlighting graphemes whose marks differ
-// from what the user typed (bases are identical by construction)
+// from what the user typed (bases are identical by construction).
+// Compare LETTER graphemes only — folded strings still contain spaces, and
+// mixing those into the index while separately skipping them in the display
+// walk shifted every highlight one letter right per preceding space/comma.
 function buildMarkDiff(userRaw, answer){
   var box = el('div', 'greek');
-  var ug = graphemes(fold(userRaw));
-  var ag = graphemes(fold(answer));
+  var letters = function(s){
+    return graphemes(fold(s)).filter(function(g){ return g !== ' '; });
+  };
+  var ug = letters(userRaw);
+  var ag = letters(answer);
   if(ug.length !== ag.length){ box.textContent = answer; return box; }
-  // display the original answer; map alignment via its folded graphemes
+  // display the original answer; its k-th letter grapheme pairs with ug[k]/ag[k]
   var orig = graphemes(answer.normalize('NFC'));
-  var oi = 0;
-  for(var i = 0; i < ag.length; i++){
-    // advance through original graphemes, carrying punctuation/space straight over
-    while(oi < orig.length && fold(orig[oi]) === ''){ box.appendChild(document.createTextNode(orig[oi])); oi++; }
-    if(oi >= orig.length) break;
+  var k = 0;
+  for(var oi = 0; oi < orig.length; oi++){
+    if(fold(orig[oi]) === ''){ box.appendChild(document.createTextNode(orig[oi])); continue; }
     var span = el('span', '', orig[oi]);
-    if(ug[i].normalize('NFC') !== ag[i].normalize('NFC')) span.className = 'hl';
+    if(k < ug.length && ug[k] !== ag[k]) span.className = 'hl';
     box.appendChild(span);
-    oi++;
+    k++;
   }
-  while(oi < orig.length){ box.appendChild(document.createTextNode(orig[oi])); oi++; }
   return box;
 }
 

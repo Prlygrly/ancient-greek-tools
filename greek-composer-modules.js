@@ -43,9 +43,12 @@ A: ὁ Πυθαγόρας οὐ θεὸς ἀλλὰ φιλόσοφός ἐστ�
 A: οὐκ ἔστιν ὁ Πυθαγόρας θεός, ἀλλὰ φιλόσοφος.
 A: ὁ Πυθαγόρας οὐκ ἔστι θεὸς ἀλλὰ φιλόσοφος.
 A: ὁ Πυθαγόρας φιλόσοφός ἐστιν.
+A: ὁ Πυθαγόρας Ἑλληνικὸς ἀνήρ ἐστιν.
+A: ὁ Πυθαγόρας οὐ θεὸς ἀλλὰ ἄνθρωπός ἐστιν.
 HINT: οὐ … ἀλλὰ …
-NOTE: No — Pythagoras is not a god but a Greek philosopher. Accept any full
-  sentence with that meaning; a bare οὔ or οὐδαμῶς is not sufficient.
+NOTE: No — Pythagoras is not a god but a Greek philosopher. Answering that he
+  is a man (ἀνήρ, ἄνθρωπος) rather than a god is also correct. Accept any full
+  sentence with either meaning; a bare οὔ or οὐδαμῶς is not sufficient.
 
 Q: Τίς ἐστι Πλάτων;
 A: ὁ Πλάτων φιλόσοφός ἐστιν.
