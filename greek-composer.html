@@ -210,6 +210,14 @@ header p{font-size:14px;color:var(--ink-faint)}
 .fb-report-btn:disabled{cursor:default;text-decoration:none;color:var(--correct)}
 .fb-report-status{font-size:12px;color:var(--ink-light);margin-top:6px;line-height:1.5}
 .fb-report-box{width:100%;margin-top:8px;font-family:'Courier New',monospace;font-size:11.5px;color:var(--ink);background:var(--bg);border:1px solid var(--card-border);border-radius:6px;padding:8px;min-height:90px;resize:vertical}
+.reports-btn{margin-top:10px;font-size:13px}
+.reports-view{margin-top:8px;font-size:13px;color:var(--ink-light)}
+.reports-count{font-size:12px;color:var(--ink-faint);margin-bottom:8px}
+.report-card{background:var(--bg);border:1px solid var(--card-border);border-radius:8px;padding:10px 12px;margin-bottom:10px;text-align:left}
+.report-meta{font-size:11px;color:var(--ink-faint);margin-bottom:6px}
+.report-q{font-family:'Noto Serif',serif;font-size:15px;color:var(--accent);margin-bottom:2px}
+.report-a{font-family:'Noto Serif',serif;font-size:15px;color:var(--ink);margin-bottom:6px}
+.report-fb{white-space:pre-wrap;font-family:'Courier New',monospace;font-size:11px;color:var(--ink-light);background:var(--bg-mid);border-radius:6px;padding:8px;margin:0;overflow-x:auto}
 
 /* ── AI rubric ── */
 .rubric{display:flex;flex-direction:column;gap:10px;margin-top:4px}
@@ -376,6 +384,8 @@ header p{font-size:14px;color:var(--ink-faint)}
           <label><input type="radio" name="pwGradeMode" value="batch"> <span><strong>Thorough</strong> &mdash; the whole module graded together at the end. Smarter AI model with only <strong>20 shared uses per day</strong> &mdash; but a whole module costs just one.</span></label>
         </div>
         <div class="set-usage" id="setUsage"></div>
+        <button type="button" class="btn-ghost reports-btn" id="viewReportsBtn" onclick="event.stopPropagation();loadReports()" style="display:none">View reported grades</button>
+        <div class="reports-view" id="reportsView"></div>
       </div>
     </div>
     <div class="set-opt" id="optByok" onclick="pickMode('byok')">
@@ -1311,15 +1321,46 @@ function reportGrade(){
   btn.disabled = true;
   btn.innerHTML = '&#10003; Reported';
   status.textContent = '';
-  status.appendChild(el('div', '', 'Saved. Copy this and send it to the app’s author so the grade can be reviewed:'));
-  var box = el('textarea', 'fb-report-box'); box.readOnly = true; box.value = text;
-  status.appendChild(box);
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){
-      status.insertBefore(el('div', '', '✓ Also copied to your clipboard.'), box);
-    }).catch(function(){});
+  var line = el('div', '', 'Thanks — this grade is flagged for review.');
+  status.appendChild(line);
+  // shared-key testers upload straight to the author; everyone keeps a local
+  // copy + clipboard fallback in case upload isn't available
+  var uploaded = false;
+  if(settings.mode === 'password' && settings.password && WORKER_URL){
+    fetch(WORKER_URL.replace(/\/+$/, '') + '/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.password },
+      body: JSON.stringify({
+        moduleId: cur.id, moduleTitle: cur.mod.title,
+        question: lastGraded.q.q, userAnswer: lastGraded.raw,
+        score: lastGraded.res.score,
+        source: lastGraded.res.tier === 3 ? 'ai' : lastGraded.res.tier === 2 ? 'accent' : lastGraded.res.tier === 1 ? 'exact' : 'heuristic',
+        feedback: text
+      })
+    }).then(function(r){
+      uploaded = r.ok;
+      line.textContent = r.ok ? '✓ Sent to the app’s author for review.'
+                              : 'Saved locally — couldn’t reach the author’s server (the copy below still works).';
+      if(!r.ok) showReportBox();
+    }).catch(function(){
+      line.textContent = 'Saved locally — couldn’t reach the author’s server (the copy below still works).';
+      showReportBox();
+    });
+  } else {
+    line.textContent = 'Saved. Copy this and send it to the app’s author so the grade can be reviewed:';
+    showReportBox();
   }
-  box.focus(); box.select();
+  function showReportBox(){
+    if(status.querySelector('.fb-report-box')) return;
+    var box = el('textarea', 'fb-report-box'); box.readOnly = true; box.value = text;
+    status.appendChild(box);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        status.insertBefore(el('div', '', '✓ Also copied to your clipboard.'), box);
+      }).catch(function(){});
+    }
+    box.focus(); box.select();
+  }
 }
 
 var RUBRIC_MARKS = { yes: '✓', partly: '~', no: '✗' };
@@ -1638,6 +1679,8 @@ function openSettings(){
   $('setStatus').textContent = '';
   $('setStatus').className = 'set-status';
   $('setUsage').textContent = '';
+  $('reportsView').textContent = '';
+  $('viewReportsBtn').style.display = (settings.password && WORKER_URL) ? '' : 'none';
   if(settings.password && WORKER_URL){
     fetch(WORKER_URL.replace(/\/+$/, '') + '/usage', {
       headers: { 'Authorization': 'Bearer ' + settings.password }
@@ -1648,6 +1691,34 @@ function openSettings(){
   }
   refreshSettingsSelection();
   showScreen('screenSettings');
+}
+
+// pull the reported grades from the worker (password-gated) into the settings view
+function loadReports(){
+  var box = $('reportsView');
+  if(!(settings.password && WORKER_URL)){ box.textContent = 'Enter and save the access password first.'; return; }
+  box.textContent = 'Loading…';
+  fetch(WORKER_URL.replace(/\/+$/, '') + '/reports', {
+    headers: { 'Authorization': 'Bearer ' + settings.password }
+  }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){ renderReports((d && d.reports) || []); })
+    .catch(function(){ box.textContent = 'Couldn’t load reports — check the password and try again.'; });
+}
+function renderReports(list){
+  var box = $('reportsView');
+  box.textContent = '';
+  box.appendChild(el('div', 'reports-count', list.length ? (list.length + ' report' + (list.length === 1 ? '' : 's') + ', newest first:') : 'No reports yet.'));
+  list.forEach(function(rp){
+    var card = el('div', 'report-card');
+    var when = (rp.ts || '').slice(0, 16).replace('T', ' ');
+    card.appendChild(el('div', 'report-meta',
+      (rp.moduleTitle || rp.moduleId || '') + ' · ' + (rp.score == null ? '—' : rp.score + '%') +
+      (rp.source ? ' · ' + rp.source : '') + (when ? ' · ' + when : '')));
+    card.appendChild(el('div', 'report-q', 'Q: ' + rp.question));
+    card.appendChild(el('div', 'report-a', 'A: ' + rp.userAnswer));
+    if(rp.feedback){ var pre = el('pre', 'report-fb'); pre.textContent = rp.feedback; card.appendChild(pre); }
+    box.appendChild(card);
+  });
 }
 
 function saveSettings(){

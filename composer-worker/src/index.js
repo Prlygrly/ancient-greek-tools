@@ -36,7 +36,7 @@ function corsHeaders(origin, env) {
   const h = { 'Vary': 'Origin' };
   if (origin && allowed.indexOf(origin) >= 0) {
     h['Access-Control-Allow-Origin'] = origin;
-    h['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+    h['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     h['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
     h['Access-Control-Max-Age'] = '86400';
   }
@@ -154,6 +154,57 @@ function validate(b) {
   const e = validateItem(b);
   if (e) return { error: e };
   return { batch: false, items: [b], moduleNote: b.moduleNote || '' };
+}
+
+// ── Wrong-grade reports (password-gated; stored in KV, auto-expire in 90 days) ──
+function validateReport(b) {
+  if (!b || typeof b !== 'object') return 'bad body';
+  if (!fieldStr(b.question, MAX.question) || !b.question.trim()) return 'question missing or too long';
+  if (!fieldStr(b.userAnswer, MAX.userAnswer) || !b.userAnswer.trim()) return 'answer missing or too long';
+  if (b.moduleId != null && !fieldStr(b.moduleId, 200)) return 'moduleId too long';
+  if (b.moduleTitle != null && !fieldStr(b.moduleTitle, 300)) return 'moduleTitle too long';
+  if (b.source != null && !fieldStr(b.source, 60)) return 'source too long';
+  if (b.feedback != null && !fieldStr(b.feedback, 4000)) return 'feedback too long';
+  if (b.score != null && typeof b.score !== 'number' && !fieldStr(b.score, 20)) return 'bad score';
+  return null;
+}
+async function storeReport(env, b) {
+  if (!env.RATE_KV) return;
+  const ts = new Date().toISOString();
+  const key = 'rpt:' + ts + '-' + Math.random().toString(36).slice(2, 8);
+  const rec = {
+    ts,
+    moduleId: String(b.moduleId || '').slice(0, 200),
+    moduleTitle: String(b.moduleTitle || '').slice(0, 300),
+    question: String(b.question || '').slice(0, MAX.question),
+    userAnswer: String(b.userAnswer || '').slice(0, MAX.userAnswer),
+    score: b.score == null ? null : (typeof b.score === 'number' ? b.score : String(b.score).slice(0, 20)),
+    source: String(b.source || '').slice(0, 60),
+    feedback: String(b.feedback || '').slice(0, 4000)
+  };
+  await env.RATE_KV.put(key, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 90 });
+}
+async function listReports(env) {
+  if (!env.RATE_KV) return [];
+  const list = await env.RATE_KV.list({ prefix: 'rpt:', limit: 200 });
+  // keys embed an ISO timestamp, so lexical sort is chronological — newest last
+  const names = list.keys.map(k => k.name).sort().reverse().slice(0, 100);
+  const out = [];
+  for (const name of names) {
+    const raw = await env.RATE_KV.get(name);
+    if (raw) { try { out.push(JSON.parse(raw)); } catch (e) { /* skip corrupt */ } }
+  }
+  return out;
+}
+// lightweight per-IP guard so a runaway client can't flood KV (separate from
+// the grading counters — reports must never eat the Gemini quota)
+async function reportRateOk(env, ip) {
+  if (!env.RATE_KV) return true;
+  const k = 'rm:' + ip + ':' + Math.floor(Date.now() / 60000);
+  const n = parseInt((await env.RATE_KV.get(k)) || '0', 10);
+  if (n >= 20) return false;
+  await env.RATE_KV.put(k, String(n + 1), { expirationTtl: 120 });
+  return true;
 }
 
 function rubricRules(batch) {
@@ -332,7 +383,9 @@ export default {
 
     const isUsage = url.pathname === '/usage' && request.method === 'GET';
     const isGrade = url.pathname === '/grade' && request.method === 'POST';
-    if (!isUsage && !isGrade) return json(404, { error: 'not found' }, cors);
+    const isReport = url.pathname === '/report' && request.method === 'POST';
+    const isReports = url.pathname === '/reports' && request.method === 'GET';
+    if (!isUsage && !isGrade && !isReport && !isReports) return json(404, { error: 'not found' }, cors);
 
     // browser requests must come from an allowlisted origin
     if (origin && !cors['Access-Control-Allow-Origin']) return json(403, { error: 'origin not allowed' }, cors);
@@ -344,8 +397,20 @@ export default {
     }
 
     if (isUsage) return json(200, await readUsage(env), cors);
+    if (isReports) return json(200, { reports: await listReports(env) }, cors);
 
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+
+    if (isReport) {
+      if (!(await reportRateOk(env, ip))) return json(429, { error: 'Too many reports — slow down.' }, cors);
+      let rbody;
+      try { rbody = await request.json(); } catch (e) { return json(400, { error: 'invalid JSON' }, cors); }
+      const rerr = validateReport(rbody);
+      if (rerr) return json(400, { error: rerr }, cors);
+      await storeReport(env, rbody);
+      return json(200, { ok: true }, cors);
+    }
+
     const limited = await rateLimit(env, ip);
     if (limited) return json(429, { error: limited.msg, kind: limited.kind }, cors);
 
