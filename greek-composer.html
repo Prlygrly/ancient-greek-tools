@@ -210,6 +210,7 @@ header p{font-size:14px;color:var(--ink-faint)}
 .fb-report-btn:disabled{cursor:default;text-decoration:none;color:var(--correct)}
 .fb-report-status{font-size:12px;color:var(--ink-light);margin-top:6px;line-height:1.5}
 .fb-report-box{width:100%;margin-top:8px;font-family:'Courier New',monospace;font-size:11.5px;color:var(--ink);background:var(--bg);border:1px solid var(--card-border);border-radius:6px;padding:8px;min-height:90px;resize:vertical}
+.admin-row{margin-top:12px;border-top:1px dashed var(--card-border);padding-top:12px}
 .reports-btn{margin-top:10px;font-size:13px}
 .reports-view{margin-top:8px;font-size:13px;color:var(--ink-light)}
 .reports-count{font-size:12px;color:var(--ink-faint);margin-bottom:8px}
@@ -384,8 +385,14 @@ header p{font-size:14px;color:var(--ink-faint)}
           <label><input type="radio" name="pwGradeMode" value="batch"> <span><strong>Thorough</strong> &mdash; the whole module graded together at the end. Smarter AI model with only <strong>20 shared uses per day</strong> &mdash; but a whole module costs just one.</span></label>
         </div>
         <div class="set-usage" id="setUsage"></div>
-        <button type="button" class="btn-ghost reports-btn" id="viewReportsBtn" onclick="event.stopPropagation();loadReports()" style="display:none">View reported grades</button>
-        <div class="reports-view" id="reportsView"></div>
+        <div class="admin-row" id="adminRow" style="display:none">
+          <div class="pw-wrap">
+            <input type="password" class="set-input" id="setAdminPw" placeholder="Admin password — author only, to view reports" autocomplete="off">
+            <button type="button" class="pw-eye" onclick="event.stopPropagation();togglePw('setAdminPw', this)" aria-label="Show admin password" aria-pressed="false">&#128065;</button>
+          </div>
+          <button type="button" class="btn-ghost reports-btn" id="viewReportsBtn" onclick="event.stopPropagation();loadReports()">View reported grades</button>
+          <div class="reports-view" id="reportsView"></div>
+        </div>
       </div>
     </div>
     <div class="set-opt" id="optByok" onclick="pickMode('byok')">
@@ -1680,7 +1687,8 @@ function openSettings(){
   $('setStatus').className = 'set-status';
   $('setUsage').textContent = '';
   $('reportsView').textContent = '';
-  $('viewReportsBtn').style.display = (settings.password && WORKER_URL) ? '' : 'none';
+  $('adminRow').style.display = WORKER_URL ? '' : 'none';
+  $('setAdminPw').value = getAdminPw();
   if(settings.password && WORKER_URL){
     fetch(WORKER_URL.replace(/\/+$/, '') + '/usage', {
       headers: { 'Authorization': 'Bearer ' + settings.password }
@@ -1693,16 +1701,23 @@ function openSettings(){
   showScreen('screenSettings');
 }
 
-// pull the reported grades from the worker (password-gated) into the settings view
+// the admin password (separate from the shared one) gates viewing reports
+var ADMIN_PW_KEY = 'greek-composer.v1.adminPw';
+function getAdminPw(){ try{ return localStorage.getItem(ADMIN_PW_KEY) || ''; }catch(e){ return ''; } }
+function setAdminPw(pw){ try{ if(pw) localStorage.setItem(ADMIN_PW_KEY, pw); else localStorage.removeItem(ADMIN_PW_KEY); }catch(e){} }
+
+// pull the reported grades from the worker (admin-gated) into the settings view
 function loadReports(){
-  var box = $('reportsView');
-  if(!(settings.password && WORKER_URL)){ box.textContent = 'Enter and save the access password first.'; return; }
+  var box = $('reportsView'), pw = $('setAdminPw').value.trim();
+  if(!WORKER_URL){ box.textContent = 'The grading server isn’t configured.'; return; }
+  if(!pw){ box.textContent = 'Enter the admin password to view reports.'; return; }
+  setAdminPw(pw);
   box.textContent = 'Loading…';
   fetch(WORKER_URL.replace(/\/+$/, '') + '/reports', {
-    headers: { 'Authorization': 'Bearer ' + settings.password }
-  }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    headers: { 'Authorization': 'Bearer ' + pw }
+  }).then(function(r){ if(r.status === 401) throw 'auth'; if(!r.ok) throw 0; return r.json(); })
     .then(function(d){ renderReports((d && d.reports) || []); })
-    .catch(function(){ box.textContent = 'Couldn’t load reports — check the password and try again.'; });
+    .catch(function(e){ box.textContent = e === 'auth' ? 'Admin password rejected.' : 'Couldn’t load reports — try again.'; });
 }
 function renderReports(list){
   var box = $('reportsView');

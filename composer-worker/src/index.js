@@ -56,14 +56,18 @@ async function sha256Hex(s) {
 }
 
 // Compare via equal-length digests so timing doesn't leak the password.
-async function passwordOk(supplied, env) {
-  if (!env.ACCESS_PASSWORD) return false;
-  const a = await sha256Hex('gc1:' + supplied);
-  const b = await sha256Hex('gc1:' + env.ACCESS_PASSWORD);
+async function digestEq(supplied, secret, salt) {
+  if (!secret) return false;
+  const a = await sha256Hex(salt + supplied);
+  const b = await sha256Hex(salt + secret);
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
+// shared access password (grading, usage, submitting reports)
+function passwordOk(supplied, env) { return digestEq(supplied, env.ACCESS_PASSWORD, 'gc1:'); }
+// admin password (viewing reports) — set via: npx wrangler secret put ADMIN_PASSWORD
+function adminOk(supplied, env) { return digestEq(supplied, env.ADMIN_PASSWORD, 'gca1:'); }
 
 // Returns { msg, kind } when limited, else null. kind lets the client
 // tell the user when the limit resets.
@@ -391,13 +395,19 @@ export default {
     if (origin && !cors['Access-Control-Allow-Origin']) return json(403, { error: 'origin not allowed' }, cors);
 
     const auth = request.headers.get('Authorization') || '';
-    const password = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : '';
-    if (!password || password.length > MAX.password || !(await passwordOk(password, env))) {
-      return json(401, { error: 'wrong password' }, cors);
+    const token = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : '';
+    if (!token || token.length > MAX.password) return json(401, { error: 'wrong password' }, cors);
+
+    // viewing reports needs the admin password, not the shared one
+    if (isReports) {
+      if (!(await adminOk(token, env))) return json(401, { error: 'wrong admin password' }, cors);
+      return json(200, { reports: await listReports(env) }, cors);
     }
 
+    // everything else (grade, usage, submitting a report) uses the shared password
+    if (!(await passwordOk(token, env))) return json(401, { error: 'wrong password' }, cors);
+
     if (isUsage) return json(200, await readUsage(env), cors);
-    if (isReports) return json(200, { reports: await listReports(env) }, cors);
 
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
 
