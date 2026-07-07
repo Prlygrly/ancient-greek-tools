@@ -606,12 +606,16 @@ function classifySub(u, a){
 // that the keyboard engine converts back INTO it, so a tester can TYPE (not
 // paste) a known-good answer. Uses the same phonetic scheme the app types with:
 //   ' acute · '' grave · ~ circumflex · h rough breathing · hh smooth
-// and the engine's own letter keys (j=η, q=θ, c=χ, f=φ, y=ψ, x=ξ, w=ω).
+// favouring audible spellings (th φ→ph χ→kh), the rest borrow a key (j=η, y=ψ,
+// x=ξ, w=ω) since those sounds have no Latin letter of their own.
 
-// invert the engine's letter map: Greek base char → the Latin key that types it
+// invert the engine's letter map: Greek base char → the Latin key(s) that type it
 var BASE_TO_LATIN = (function(){
   var inv = {}, L = GreekKeyboard.latinToGreek;
   for(var key in L){ if(!(L[key] in inv)) inv[L[key]] = key; }
+  // prefer the audible digraphs the engine's h-retro-replace also accepts
+  inv['θ'] = 'th'; inv['φ'] = 'ph'; inv['χ'] = 'kh';
+  inv['Θ'] = 'Th'; inv['Φ'] = 'Ph'; inv['Χ'] = 'Kh';
   inv['ς'] = 's'; // final sigma isn't in the letter map — type 's', engine finalizes
   return inv;
 })();
@@ -1609,16 +1613,16 @@ var TUT_KEY = 'greek-composer.v1.tutorialDone';
 var TUTORIAL_STEPS = [
   { say: 'Most letters are phonetic — type Latin, see Greek appear. The final sigma takes care of itself.',
     latin: 'logos', target: 'λογος' },
-  { say: 'Some letters borrow a key by shape or convention: q → θ, w → ω, j → η, y → ψ, c → χ, x → ξ (digraphs th, ph, kh, ps work too).',
-    latin: 'anqrwpos', target: 'ανθρωπος' },
-  { say: 'Accents are typed after their vowel: / for acute (or ’), \\ for grave, = or ~ for circumflex.',
-    latin: 'lo/gos', target: 'λόγος' },
+  { say: 'Letters with a Latin sound use it — th → θ, ph → φ, kh → χ. The rest borrow a key: j → η, w → ω, y → ψ, x → ξ.',
+    latin: 'anthrwpos', target: 'ανθρωπος' },
+  { say: 'Accents are typed after their vowel: ’ for acute, ’’ for grave, ~ for circumflex.',
+    latin: "lo'gos", target: 'λόγος' },
   { say: 'Type h for rough breathing right where you hear it — at the start of the word.',
     latin: 'hippos', target: 'ἱππος' },
   { say: 'On a word-initial diphthong the breathing mark moves to the second vowel by itself.',
     latin: 'hoi', target: 'οἱ' },
-  { say: 'Smooth breathing is ) typed after the vowel, and the Greek question mark is a semicolon — just press ?. Ask: who are you?',
-    latin: 'ti/s ei)=?', target: 'τίς εἶ;' }
+  { say: 'Smooth breathing is hh (h twice) after the vowel, and the Greek question mark is a semicolon — just press ?. Ask: who are you?',
+    latin: "ti's eihh~?", target: 'τίς εἶ;' }
 ];
 var tutIdx = 0, tutTimer = null, tutAdvancing = false, tutFinished = false;
 
