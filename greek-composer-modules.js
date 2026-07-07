@@ -103,7 +103,11 @@ A: οὐκ ἔστι τὸ θηρίον πληθυντικὸς ἀριθμός,
 A: τὸ θηρίον ἑνικὸς ἀριθμός ἐστιν.
 HINT: οὐ πληθυντικὸς ἀλλὰ …
 NOTE: No — the word θηρίον is singular (ἑνικὸς ἀριθμός). This is a question
-  about the grammatical number of the word itself.
+  about the grammatical number of the word itself. Give full credit to any
+  answer that shows the student knows θηρίον is singular — including answering
+  by contrast, e.g. stating that θηρία is the plural (which implies θηρίον is
+  not). Correctly forming the plural θηρία demonstrates the very point; do not
+  mark it wrong for not restating the question literally.
 `
 }
 ];

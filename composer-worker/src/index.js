@@ -159,6 +159,7 @@ function validate(b) {
 function rubricRules(batch) {
   return [
     'Overall score 0-100: fully correct incl. accents/breathings = 100; diacritic-only slips 85-95; right meaning with real grammar errors 50-80; wrong meaning or not a sentence lower.',
+    'Grade at the student’s level (see module guidance) — reward demonstrated understanding, not advanced phrasing. Credit answers that are correct by clear implication or contrast (e.g. naming the plural to show the given word is singular) nearly as much as literal answers; dock only lightly for indirectness, and never below the "right meaning" band for a well-formed sentence that proves the underlying point.',
     'Rubric — each part gets ok = "yes"|"partly"|"no" plus a 1-2 sentence beginner-friendly English note quoting the Greek:',
     '- sentence: is it a complete Greek sentence?',
     '- spelling: words spelled correctly incl. accents and breathings? For EVERY corrected word show student form → corrected form (φιλοσοφος → φιλόσοφος). Name only marks actually wrong or missing — verify each in the student’s form first, and if the student form and your corrected form are identical strings, do not list that word at all. Breathings sit only on a word-initial vowel/diphthong or ρ; a word starting with any other consonant never takes one. If the base letters are right and only a mark is off, it is a diacritic slip, never a case/ending error; diagnose endings only when the letters themselves differ.',
