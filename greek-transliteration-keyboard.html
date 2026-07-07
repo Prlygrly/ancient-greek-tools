@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<script>
+/* Apply saved theme before paint to avoid a white flash. Shared key across all Greek tools. */
+try{var t=localStorage.getItem('greek-plan-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else if(!t&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');}catch(e){}
+</script>
 <title>Greek Transliteration Keyboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700&family=Source+Sans+Pro:wght@400;600;700&family=Noto+Serif:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
 <style>
