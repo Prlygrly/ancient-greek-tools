@@ -28,7 +28,10 @@ const MAX = {
   answers: 10,
   answerLen: 1000,
   password: 200,
-  items: 25
+  items: 25,
+  source: 210000,   // a submitted module's raw text (~200 KB, matches the parser cap)
+  title: 300,
+  subNote: 2000
 };
 
 function corsHeaders(origin, env) {
@@ -200,8 +203,42 @@ async function listReports(env) {
   }
   return out;
 }
+// ── Module submissions (shared pw to submit, admin pw to view; KV, 90-day TTL) ──
+function validateSubmission(b) {
+  if (!b || typeof b !== 'object') return 'bad body';
+  if (!fieldStr(b.source, MAX.source) || !b.source.trim()) return 'module text missing or too long';
+  if (b.title != null && !fieldStr(b.title, MAX.title)) return 'title too long';
+  if (b.note != null && !fieldStr(b.note, MAX.subNote)) return 'note too long';
+  if (b.questionCount != null && typeof b.questionCount !== 'number' && !fieldStr(b.questionCount, 10)) return 'bad questionCount';
+  return null;
+}
+async function storeSubmission(env, b) {
+  if (!env.RATE_KV) return;
+  const ts = new Date().toISOString();
+  const key = 'sub:' + ts + '-' + Math.random().toString(36).slice(2, 8);
+  const rec = {
+    ts,
+    title: String(b.title || '').slice(0, MAX.title),
+    questionCount: b.questionCount == null ? null : (typeof b.questionCount === 'number' ? b.questionCount : String(b.questionCount).slice(0, 10)),
+    note: String(b.note || '').slice(0, MAX.subNote),
+    source: String(b.source || '').slice(0, MAX.source)
+  };
+  await env.RATE_KV.put(key, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 90 });
+}
+async function listSubmissions(env) {
+  if (!env.RATE_KV) return [];
+  const list = await env.RATE_KV.list({ prefix: 'sub:', limit: 200 });
+  const names = list.keys.map(k => k.name).sort().reverse().slice(0, 100);
+  const out = [];
+  for (const name of names) {
+    const raw = await env.RATE_KV.get(name);
+    if (raw) { try { out.push(JSON.parse(raw)); } catch (e) { /* skip corrupt */ } }
+  }
+  return out;
+}
+
 // lightweight per-IP guard so a runaway client can't flood KV (separate from
-// the grading counters — reports must never eat the Gemini quota)
+// the grading counters — reports/submissions must never eat the Gemini quota)
 async function reportRateOk(env, ip) {
   if (!env.RATE_KV) return true;
   const k = 'rm:' + ip + ':' + Math.floor(Date.now() / 60000);
@@ -389,7 +426,11 @@ export default {
     const isGrade = url.pathname === '/grade' && request.method === 'POST';
     const isReport = url.pathname === '/report' && request.method === 'POST';
     const isReports = url.pathname === '/reports' && request.method === 'GET';
-    if (!isUsage && !isGrade && !isReport && !isReports) return json(404, { error: 'not found' }, cors);
+    const isSubmit = url.pathname === '/submit' && request.method === 'POST';
+    const isSubmissions = url.pathname === '/submissions' && request.method === 'GET';
+    if (!isUsage && !isGrade && !isReport && !isReports && !isSubmit && !isSubmissions) {
+      return json(404, { error: 'not found' }, cors);
+    }
 
     // browser requests must come from an allowlisted origin
     if (origin && !cors['Access-Control-Allow-Origin']) return json(403, { error: 'origin not allowed' }, cors);
@@ -398,10 +439,10 @@ export default {
     const token = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : '';
     if (!token || token.length > MAX.password) return json(401, { error: 'wrong password' }, cors);
 
-    // viewing reports needs the admin password, not the shared one
-    if (isReports) {
+    // viewing reports or submissions needs the admin password, not the shared one
+    if (isReports || isSubmissions) {
       if (!(await adminOk(token, env))) return json(401, { error: 'wrong admin password' }, cors);
-      return json(200, { reports: await listReports(env) }, cors);
+      return json(200, isReports ? { reports: await listReports(env) } : { submissions: await listSubmissions(env) }, cors);
     }
 
     // everything else (grade, usage, submitting a report) uses the shared password
@@ -418,6 +459,16 @@ export default {
       const rerr = validateReport(rbody);
       if (rerr) return json(400, { error: rerr }, cors);
       await storeReport(env, rbody);
+      return json(200, { ok: true }, cors);
+    }
+
+    if (isSubmit) {
+      if (!(await reportRateOk(env, ip))) return json(429, { error: 'Too many submissions — slow down.' }, cors);
+      let sbody;
+      try { sbody = await request.json(); } catch (e) { return json(400, { error: 'invalid JSON' }, cors); }
+      const serr = validateSubmission(sbody);
+      if (serr) return json(400, { error: serr }, cors);
+      await storeSubmission(env, sbody);
       return json(200, { ok: true }, cors);
     }
 

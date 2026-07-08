@@ -392,6 +392,8 @@ header p{font-size:14px;color:var(--ink-faint)}
           </div>
           <button type="button" class="btn-ghost reports-btn" id="viewReportsBtn" onclick="event.stopPropagation();loadReports()">View reported grades</button>
           <div class="reports-view" id="reportsView"></div>
+          <button type="button" class="btn-ghost reports-btn" id="viewSubmissionsBtn" onclick="event.stopPropagation();loadSubmissions()">View submitted modules</button>
+          <div class="reports-view" id="submissionsView"></div>
         </div>
       </div>
     </div>
@@ -1631,9 +1633,24 @@ function onUploadText(text){
     r.warnings.forEach(function(w){ wul.appendChild(el('li', 'warn', w)); });
     res.appendChild(wul);
   }
-  res.appendChild(el('div', '', isPrivate
-    ? 'Saved to this browser only.'
-    : 'Saved to this browser. Review submissions aren’t open yet, so nothing has been sent anywhere.'));
+  if(isPrivate){
+    res.appendChild(el('div', '', 'Saved to this browser only.'));
+  } else if(settings.mode === 'password' && settings.password && WORKER_URL){
+    var subMsg = el('div', '', 'Saved to this browser. Sending a copy for review…');
+    res.appendChild(subMsg);
+    fetch(WORKER_URL.replace(/\/+$/, '') + '/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.password },
+      body: JSON.stringify({ title: r.module.title, questionCount: r.module.questions.length, source: text })
+    }).then(function(rp){
+      subMsg.textContent = rp.ok ? 'Saved here and sent to the author for review — thank you!'
+                                 : 'Saved to this browser. Couldn’t send it for review just now.';
+    }).catch(function(){
+      subMsg.textContent = 'Saved to this browser. Couldn’t reach the review server.';
+    });
+  } else {
+    res.appendChild(el('div', '', 'Saved to this browser. To submit it for review, set the shared access password in AI grading settings.'));
+  }
 }
 
 function deleteUserModule(id, btn){
@@ -1687,6 +1704,7 @@ function openSettings(){
   $('setStatus').className = 'set-status';
   $('setUsage').textContent = '';
   $('reportsView').textContent = '';
+  $('submissionsView').textContent = '';
   $('adminRow').style.display = WORKER_URL ? '' : 'none';
   $('setAdminPw').value = getAdminPw();
   if(settings.password && WORKER_URL){
@@ -1734,6 +1752,50 @@ function renderReports(list){
     if(rp.feedback){ var pre = el('pre', 'report-fb'); pre.textContent = rp.feedback; card.appendChild(pre); }
     box.appendChild(card);
   });
+}
+
+// admin-gated: pull submitted modules, review the source, optionally import
+function loadSubmissions(){
+  var box = $('submissionsView'), pw = $('setAdminPw').value.trim();
+  if(!WORKER_URL){ box.textContent = 'The grading server isn’t configured.'; return; }
+  if(!pw){ box.textContent = 'Enter the admin password to view submissions.'; return; }
+  setAdminPw(pw);
+  box.textContent = 'Loading…';
+  fetch(WORKER_URL.replace(/\/+$/, '') + '/submissions', {
+    headers: { 'Authorization': 'Bearer ' + pw }
+  }).then(function(r){ if(r.status === 401) throw 'auth'; if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){ renderSubmissions((d && d.submissions) || []); })
+    .catch(function(e){ box.textContent = e === 'auth' ? 'Admin password rejected.' : 'Couldn’t load submissions — try again.'; });
+}
+function renderSubmissions(list){
+  var box = $('submissionsView');
+  box.textContent = '';
+  box.appendChild(el('div', 'reports-count', list.length ? (list.length + ' submission' + (list.length === 1 ? '' : 's') + ', newest first:') : 'No submissions yet.'));
+  list.forEach(function(sb){
+    var card = el('div', 'report-card');
+    var when = (sb.ts || '').slice(0, 16).replace('T', ' ');
+    card.appendChild(el('div', 'report-meta',
+      (sb.title || '(untitled)') + (sb.questionCount != null ? ' · ' + sb.questionCount + ' questions' : '') + (when ? ' · ' + when : '')));
+    if(sb.note) card.appendChild(el('div', 'report-a', sb.note));
+    var ta = el('textarea', 'fb-report-box'); ta.readOnly = true; ta.value = sb.source || '';
+    card.appendChild(ta);
+    var imp = el('button', 'btn-ghost reports-btn', 'Import to this browser');
+    imp.type = 'button';
+    imp.onclick = function(){ importSubmission(sb.source, imp); };
+    card.appendChild(imp);
+    box.appendChild(card);
+  });
+}
+function importSubmission(source, btn){
+  var r = GreekComposer.parseModule(source);
+  if(!r.ok){ btn.textContent = 'Couldn’t parse this module'; return; }
+  var arr = readUserModules();
+  arr.push({ id: 'user-' + slugify(r.module.title) + '-' + Date.now().toString(36), source: source, private: true, addedAt: Date.now() });
+  if(!writeUserModules(arr)){ btn.textContent = 'Couldn’t save (storage full?)'; return; }
+  loadModules();
+  renderHome();
+  btn.textContent = 'Imported ✓ — it’s in your module list';
+  btn.disabled = true;
 }
 
 function saveSettings(){

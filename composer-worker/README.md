@@ -46,8 +46,11 @@ the app's browser console set:
 - `GET /usage` — `Bearer <access password>` → daily quick/thorough counts.
 - `POST /report` — `Bearer <access password>`, a flagged grade → `{ ok: true }`.
   Stored in KV, auto-expires in 90 days.
+- `POST /submit` — `Bearer <access password>`, `{ title?, questionCount?, source, note? }`
+  → `{ ok: true }`. A user's non-private module upload, for review. KV, 90-day TTL.
 - `GET /reports` — `Bearer <ADMIN password>` → recent reports, newest first.
-  The one endpoint that needs the admin password, not the shared one.
+- `GET /submissions` — `Bearer <ADMIN password>` → recent module submissions.
+  `/reports` and `/submissions` are the only endpoints needing the admin password.
 
 Limits: 8 requests/min/IP, 300/day globally (vars in wrangler.toml), answer ≤ 500
 chars, prompt built server-side only.
