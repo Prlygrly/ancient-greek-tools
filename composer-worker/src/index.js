@@ -355,18 +355,9 @@ function fakeRubric(i) {
   };
 }
 
-// Single: returns one rubric. Batch: returns an array of rubrics carrying
-// `index` (1-based item number). Per-question requests use the lite model;
-// batch requests use the smarter batch model — one upstream request either way.
-async function callGemini(env, prompt, batch, count) {
-  if (env.TEST_FAKE_LLM === '1') {
-    // local-dev escape hatch (.dev.vars) — never set in production
-    if (!batch) return fakeRubric(0);
-    return Array.from({ length: count }, (_, i) => fakeRubric(i + 1));
-  }
-  const model = batch
-    ? (env.GEMINI_MODEL_BATCH || env.GEMINI_MODEL || 'gemini-3-flash')
-    : (env.GEMINI_MODEL || 'gemini-3.1-flash-lite');
+// One upstream call to a specific model. Returns the parsed rubric (single) or
+// array of indexed rubrics (batch). Throws on failure with err.status set.
+async function callModel(env, model, prompt, batch, count) {
   const generationConfig = {
     temperature: 0.2,
     // thinking models spend maxOutputTokens on thoughts — keep headroom;
@@ -402,6 +393,7 @@ async function callGemini(env, prompt, batch, count) {
   if (!resp.ok) {
     const t = await resp.text();
     const err = new Error('upstream ' + resp.status + ': ' + t.slice(0, 300));
+    err.status = resp.status;
     if (resp.status === 429) err.quota = true;
     throw err;
   }
@@ -435,6 +427,51 @@ async function callGemini(env, prompt, batch, count) {
   return out;
 }
 
+// admin incident log — records when a configured model 404s and we fall back,
+// so the author knows a model ID needs updating (30-day TTL)
+async function storeIncident(env, rec) {
+  if (!env.RATE_KV) return;
+  const ts = new Date().toISOString();
+  await env.RATE_KV.put('inc:' + ts + '-' + Math.random().toString(36).slice(2, 6),
+    JSON.stringify(Object.assign({ ts }, rec)), { expirationTtl: 60 * 60 * 24 * 30 });
+}
+async function listIncidents(env) {
+  if (!env.RATE_KV) return [];
+  const list = await env.RATE_KV.list({ prefix: 'inc:', limit: 200 });
+  const names = list.keys.map(k => k.name).sort().reverse().slice(0, 100);
+  const out = [];
+  for (const name of names) {
+    const raw = await env.RATE_KV.get(name);
+    if (raw) { try { out.push(JSON.parse(raw)); } catch (e) { /* skip */ } }
+  }
+  return out;
+}
+
+// Picks the configured model for the request, and if it 404s (retired), retries
+// ONCE with the other configured model so grading fails soft. Returns
+// { data, fellBack } where fellBack is the model actually used, or null.
+async function callGemini(env, prompt, batch, count) {
+  if (env.TEST_FAKE_LLM === '1') {
+    // local-dev escape hatch (.dev.vars) — never set in production
+    const data = batch ? Array.from({ length: count }, (_, i) => fakeRubric(i + 1)) : fakeRubric(0);
+    return { data, fellBack: null };
+  }
+  const quick = env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+  const primary = batch ? (env.GEMINI_MODEL_BATCH || quick) : quick;
+  const fallback = batch ? quick : (env.GEMINI_MODEL_BATCH || quick);
+  try {
+    return { data: await callModel(env, primary, prompt, batch, count), fellBack: null };
+  } catch (e) {
+    // only a 404 means the model is gone — quota/format errors shouldn't switch models
+    if (e && e.status === 404 && fallback && fallback !== primary) {
+      await storeIncident(env, { model: primary, status: 404, batch: !!batch, action: 'fell back to ' + fallback });
+      const data = await callModel(env, fallback, prompt, batch, count); // may still throw
+      return { data, fellBack: fallback };
+    }
+    throw e;
+  }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -456,7 +493,8 @@ export default {
     const isSubmissions = url.pathname === '/submissions' && request.method === 'GET';
     const isPublish = url.pathname === '/publish' && request.method === 'POST';
     const isUnpublish = url.pathname === '/unpublish' && request.method === 'POST';
-    if (!isUsage && !isGrade && !isReport && !isReports && !isSubmit && !isSubmissions && !isPublish && !isUnpublish) {
+    const isIncidents = url.pathname === '/incidents' && request.method === 'GET';
+    if (!isUsage && !isGrade && !isReport && !isReports && !isSubmit && !isSubmissions && !isPublish && !isUnpublish && !isIncidents) {
       return json(404, { error: 'not found' }, cors);
     }
 
@@ -467,10 +505,12 @@ export default {
     const token = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : '';
     if (!token || token.length > MAX.password) return json(401, { error: 'wrong password' }, cors);
 
-    // viewing reports or submissions needs the admin password, not the shared one
-    if (isReports || isSubmissions) {
+    // viewing reports / submissions / incidents needs the admin password
+    if (isReports || isSubmissions || isIncidents) {
       if (!(await adminOk(token, env))) return json(401, { error: 'wrong admin password' }, cors);
-      return json(200, isReports ? { reports: await listReports(env) } : { submissions: await listSubmissions(env) }, cors);
+      if (isReports) return json(200, { reports: await listReports(env) }, cors);
+      if (isSubmissions) return json(200, { submissions: await listSubmissions(env) }, cors);
+      return json(200, { incidents: await listIncidents(env) }, cors);
     }
 
     // publishing / unpublishing a module for everyone — admin only
@@ -526,9 +566,10 @@ export default {
     try {
       const prompt = buildPrompt(v.items, v.moduleNote, v.batch);
       const usage = await trackUsage(env, v.batch);
-      const result = await callGemini(env, prompt, v.batch, v.items.length);
-      const payload = v.batch ? { results: result } : result;
+      const { data, fellBack } = await callGemini(env, prompt, v.batch, v.items.length);
+      const payload = v.batch ? { results: data } : Object.assign({}, data);
       if (usage) payload.usage = usage;
+      if (fellBack) payload.fellBack = fellBack; // the model actually used, if it wasn't the configured one
       return json(200, payload, cors);
     } catch (e) {
       console.error('grading failed:', e && e.message);

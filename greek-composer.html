@@ -396,6 +396,8 @@ header p{font-size:14px;color:var(--ink-faint)}
           <div class="reports-view" id="submissionsView"></div>
           <button type="button" class="btn-ghost reports-btn" id="viewPublishedBtn" onclick="event.stopPropagation();loadPublished()">Manage published (live) modules</button>
           <div class="reports-view" id="publishedView"></div>
+          <button type="button" class="btn-ghost reports-btn" id="viewIncidentsBtn" onclick="event.stopPropagation();loadIncidents()">Model incidents (backup fallbacks)</button>
+          <div class="reports-view" id="incidentsView"></div>
         </div>
       </div>
     </div>
@@ -940,7 +942,7 @@ function gradeWithLLM(q, userAnswer){
     }).then(function(res){
       if(res.error) return { error: res.error };
       var r = cleanLLMResult(res.data);
-      if(r) r.usage = res.data.usage || null;
+      if(r){ r.usage = res.data.usage || null; r.fellBack = res.data.fellBack || null; }
       return r || { error: 'AI returned an unusable reply.' };
     });
   }
@@ -972,7 +974,7 @@ function gradeBatchLLM(items, moduleNote){
     return workerFetch({ items: items, moduleNote: moduleNote || '' }).then(function(res){
       if(res.error) return { error: res.error };
       var results = cleanArray(res.data && res.data.results);
-      return results ? { ok: true, results: results, usage: res.data.usage || null } : { error: 'AI returned an unusable reply.' };
+      return results ? { ok: true, results: results, usage: res.data.usage || null, fellBack: res.data.fellBack || null } : { error: 'AI returned an unusable reply.' };
     });
   }
 
@@ -1051,7 +1053,7 @@ function grade(userRaw, q){
     return Promise.resolve(h);
   }
   return gradeWithLLM(q, userRaw).then(function(llm){
-    if(llm && llm.ok) return { tier: 3, score: llm.score, rubric: llm.rubric, usage: llm.usage };
+    if(llm && llm.ok) return { tier: 3, score: llm.score, rubric: llm.rubric, usage: llm.usage, fellBack: llm.fellBack };
     var h2 = heuristicGrade(uf, q);
     h2.llmError = (llm && llm.error) || '';
     return h2;
@@ -1264,6 +1266,7 @@ function renderFeedback(res, q, raw){
     msg.textContent = res.score >= 85 ? 'Very close — see the rubric.' : 'See the rubric below.';
     caveat.textContent = 'AI-generated feedback — it can make mistakes.' + usageLine(res.usage);
     caveat.style.display = '';
+    if(res.fellBack) detail.appendChild(el('div', 'fb-ai-note', 'Graded with the backup model (' + res.fellBack + ') — the usual grader was unavailable.'));
     detail.appendChild(buildRubric(res.rubric));
   } else if(res.score === null){
     badge.className = 'fb-badge try'; badge.textContent = '—';
@@ -1523,12 +1526,14 @@ function runBatchGrade(){
       p.pending = (p.pending || []).filter(function(qi){ return !(p.aiResults && p.aiResults[qi]); });
       persistProgress();
       lastBatchUsage = res.usage || null;
+      lastBatchFellBack = res.fellBack || null;
       return {};
     }
     return { error: (res && res.error) || 'AI grading failed.' };
   });
 }
 var lastBatchUsage = null;
+var lastBatchFellBack = null;
 
 function gradePendingNow(){
   if(!cur || !pendingIdxs().length) return;
@@ -1556,6 +1561,9 @@ function showReview(err, hideContinue){
   }
   if(lastBatchUsage && settings.mode === 'password'){
     list.appendChild(el('div', 'rev-usage', 'Thorough gradings used today: ' + lastBatchUsage.batch + ' of 20 (shared).'));
+  }
+  if(lastBatchFellBack){
+    list.appendChild(el('div', 'rev-usage', 'Graded with the backup model (' + lastBatchFellBack + ') — the usual grader was unavailable.'));
   }
   cur.mod.questions.forEach(function(q, i){
     if(!p.answers || p.answers[i] === undefined) return;
@@ -1733,6 +1741,7 @@ function openSettings(){
   $('reportsView').textContent = '';
   $('submissionsView').textContent = '';
   $('publishedView').textContent = '';
+  $('incidentsView').textContent = '';
   $('adminRow').style.display = WORKER_URL ? '' : 'none';
   $('setAdminPw').value = getAdminPw();
   if(settings.password && WORKER_URL){
@@ -1866,6 +1875,33 @@ function unpublishModule(id, btn){
   }).then(function(r){ if(r.status === 401) throw 'auth'; if(!r.ok) throw 0; return r.json(); })
     .then(function(){ btn.textContent = 'Unpublished ✓'; loadPublishedModules(); })
     .catch(function(e){ btn.disabled = false; btn.textContent = e === 'auth' ? 'Admin password rejected' : 'Retry'; });
+}
+
+// admin: when did a configured model 404 and force a backup fallback?
+function loadIncidents(){
+  var box = $('incidentsView'), pw = $('setAdminPw').value.trim();
+  if(!WORKER_URL){ box.textContent = 'The grading server isn’t configured.'; return; }
+  if(!pw){ box.textContent = 'Enter the admin password to view incidents.'; return; }
+  setAdminPw(pw);
+  box.textContent = 'Loading…';
+  fetch(WORKER_URL.replace(/\/+$/, '') + '/incidents', {
+    headers: { 'Authorization': 'Bearer ' + pw }
+  }).then(function(r){ if(r.status === 401) throw 'auth'; if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){ renderIncidents((d && d.incidents) || []); })
+    .catch(function(e){ box.textContent = e === 'auth' ? 'Admin password rejected.' : 'Couldn’t load incidents — try again.'; });
+}
+function renderIncidents(list){
+  var box = $('incidentsView');
+  box.textContent = '';
+  if(!list.length){ box.appendChild(el('div', 'reports-count', 'No model incidents — all configured models are working.')); return; }
+  box.appendChild(el('div', 'reports-count', list.length + ' incident' + (list.length === 1 ? '' : 's') + ', newest first — a configured model needs updating:'));
+  list.forEach(function(inc){
+    var card = el('div', 'report-card');
+    var when = (inc.ts || '').slice(0, 16).replace('T', ' ');
+    card.appendChild(el('div', 'report-meta', when + (inc.batch ? ' · batch' : ' · per-question')));
+    card.appendChild(el('div', 'report-a', (inc.model || '?') + ' returned ' + (inc.status || '?') + ' — ' + (inc.action || '')));
+    box.appendChild(card);
+  });
 }
 function importSubmission(source, btn){
   var r = GreekComposer.parseModule(source);

@@ -55,7 +55,13 @@ the app's browser console set:
 - `POST /publish` — `Bearer <ADMIN password>`, `{ title, source, id? }` → `{ ok, id }`.
   Stores a module live for everyone (no TTL, until unpublished).
 - `POST /unpublish` — `Bearer <ADMIN password>`, `{ id }` → `{ ok }`.
-  `/reports`, `/submissions`, `/publish`, `/unpublish` need the admin password.
+- `GET /incidents` — `Bearer <ADMIN password>` → times a configured model 404'd
+  and grading fell back to the other model (so you know to update a model ID).
+
+Grading falls back automatically: if the configured model 404s (retired), the
+worker retries once with the other configured model and tags the response with
+`fellBack`. `/reports`, `/submissions`, `/publish`, `/unpublish`, `/incidents`
+need the admin password.
 
 Limits: 8 requests/min/IP, 300/day globally (vars in wrangler.toml), answer ≤ 500
 chars, prompt built server-side only.
