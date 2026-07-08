@@ -394,6 +394,8 @@ header p{font-size:14px;color:var(--ink-faint)}
           <div class="reports-view" id="reportsView"></div>
           <button type="button" class="btn-ghost reports-btn" id="viewSubmissionsBtn" onclick="event.stopPropagation();loadSubmissions()">View submitted modules</button>
           <div class="reports-view" id="submissionsView"></div>
+          <button type="button" class="btn-ghost reports-btn" id="viewPublishedBtn" onclick="event.stopPropagation();loadPublished()">Manage published (live) modules</button>
+          <div class="reports-view" id="publishedView"></div>
         </div>
       </div>
     </div>
@@ -467,7 +469,8 @@ function $(id){ return document.getElementById(id); }
 var PROGRESS_KEY = 'greek-composer.v1.progress';
 var USER_MODULES_KEY = 'greek-composer.v1.modules';
 
-var modules = [];   // { id, origin:'builtin'|'user', mod }
+var modules = [];         // { id, origin:'builtin'|'user'|'published', mod }
+var publishedCache = [];  // modules the author published, fetched from the worker on load
 
 function readUserModules(){
   try{
@@ -489,11 +492,29 @@ function loadModules(){
   readUserModules().forEach(function(p){
     if(p && p.id && p.source) packs.push({ id: p.id, origin: 'user', source: p.source, priv: !!p.private });
   });
+  (publishedCache || []).forEach(function(p){
+    if(p && p.id && p.source) packs.push({ id: p.id, origin: 'published', source: p.source });
+  });
   packs.forEach(function(p){
     var r = GreekComposer.parseModule(p.source);
     if(r.ok) modules.push({ id: p.id, origin: p.origin, priv: p.priv, mod: r.module });
     else if(window.console) console.warn('Module "' + p.id + '" failed to parse:', r.errors);
   });
+}
+
+// fetch the author's published modules (public endpoint) and merge them in for
+// everyone — non-blocking, so the built-ins work even if the worker is down
+function loadPublishedModules(){
+  if(!WORKER_URL) return;
+  fetch(WORKER_URL.replace(/\/+$/, '') + '/published')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if(d && Array.isArray(d.published)){
+        publishedCache = d.published;
+        loadModules();
+        renderHome();
+      }
+    }).catch(function(){});
 }
 
 var progress = {};   // { [modId]: { idx, scores: [], done } }
@@ -1073,6 +1094,7 @@ function renderHome(){
     var metaBits = [m.questions.length + ' questions'];
     if(m.author) metaBits.push('by ' + m.author);
     if(entry.origin === 'user') metaBits.push(entry.priv ? 'your upload · private' : 'your upload');
+    else if(entry.origin === 'published') metaBits.push('community');
     if(p && p.done) metaBits.push('completed');
     else if(answered) metaBits.push(answered + ' answered');
     card.appendChild(el('div', 'mod-meta', metaBits.join(' · ')));
@@ -1710,6 +1732,7 @@ function openSettings(){
   $('setUsage').textContent = '';
   $('reportsView').textContent = '';
   $('submissionsView').textContent = '';
+  $('publishedView').textContent = '';
   $('adminRow').style.display = WORKER_URL ? '' : 'none';
   $('setAdminPw').value = getAdminPw();
   if(settings.password && WORKER_URL){
@@ -1788,8 +1811,61 @@ function renderSubmissions(list){
     imp.type = 'button';
     imp.onclick = function(){ importSubmission(sb.source, imp); };
     card.appendChild(imp);
+    var pub = el('button', 'btn-ghost reports-btn', 'Publish to everyone');
+    pub.type = 'button';
+    pub.onclick = function(){ publishSubmission(sb, pub); };
+    card.appendChild(pub);
     box.appendChild(card);
   });
+}
+
+// ── Publish a module live for everyone (admin) ──
+function publishSubmission(sb, btn){
+  var pw = $('setAdminPw').value.trim();
+  if(!pw){ btn.textContent = 'Enter admin password first'; return; }
+  btn.disabled = true; btn.textContent = 'Publishing…';
+  fetch(WORKER_URL.replace(/\/+$/, '') + '/publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + pw },
+    body: JSON.stringify({ title: sb.title || '', source: sb.source || '' })
+  }).then(function(r){ if(r.status === 401) throw 'auth'; if(!r.ok) throw 0; return r.json(); })
+    .then(function(){ btn.textContent = 'Published to everyone ✓'; loadPublishedModules(); })
+    .catch(function(e){ btn.disabled = false; btn.textContent = e === 'auth' ? 'Admin password rejected' : 'Couldn’t publish — retry'; });
+}
+function loadPublished(){
+  var box = $('publishedView');
+  if(!WORKER_URL){ box.textContent = 'The grading server isn’t configured.'; return; }
+  box.textContent = 'Loading…';
+  fetch(WORKER_URL.replace(/\/+$/, '') + '/published')
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){ renderPublished((d && d.published) || []); })
+    .catch(function(){ box.textContent = 'Couldn’t load published modules.'; });
+}
+function renderPublished(list){
+  var box = $('publishedView');
+  box.textContent = '';
+  box.appendChild(el('div', 'reports-count', list.length ? (list.length + ' live module' + (list.length === 1 ? '' : 's') + ' — everyone sees these:') : 'Nothing published yet.'));
+  list.forEach(function(pm){
+    var card = el('div', 'report-card');
+    card.appendChild(el('div', 'report-meta', (pm.title || pm.id) + (pm.ts ? ' · ' + pm.ts.slice(0, 16).replace('T', ' ') : '')));
+    var un = el('button', 'btn-ghost reports-btn', 'Unpublish');
+    un.type = 'button';
+    un.onclick = function(){ unpublishModule(pm.id, un); };
+    card.appendChild(un);
+    box.appendChild(card);
+  });
+}
+function unpublishModule(id, btn){
+  var pw = $('setAdminPw').value.trim();
+  if(!pw){ btn.textContent = 'Enter admin password first'; return; }
+  btn.disabled = true; btn.textContent = 'Removing…';
+  fetch(WORKER_URL.replace(/\/+$/, '') + '/unpublish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + pw },
+    body: JSON.stringify({ id: id })
+  }).then(function(r){ if(r.status === 401) throw 'auth'; if(!r.ok) throw 0; return r.json(); })
+    .then(function(){ btn.textContent = 'Unpublished ✓'; loadPublishedModules(); })
+    .catch(function(e){ btn.disabled = false; btn.textContent = e === 'auth' ? 'Admin password rejected' : 'Retry'; });
 }
 function importSubmission(source, btn){
   var r = GreekComposer.parseModule(source);
@@ -2014,6 +2090,7 @@ loadProgress();
 loadSettings();
 updateAiDot();
 renderHome();
+loadPublishedModules();  // merge in the author's published modules (async)
 var tutSeen = false;
 try{ tutSeen = !!localStorage.getItem(TUT_KEY); }catch(e){}
 if(!tutSeen) openTutorial();

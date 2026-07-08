@@ -50,7 +50,12 @@ the app's browser console set:
   → `{ ok: true }`. A user's non-private module upload, for review. KV, 90-day TTL.
 - `GET /reports` — `Bearer <ADMIN password>` → recent reports, newest first.
 - `GET /submissions` — `Bearer <ADMIN password>` → recent module submissions.
-  `/reports` and `/submissions` are the only endpoints needing the admin password.
+- `GET /published` — **public, no auth** → modules the author published; every
+  app fetches this on load and merges them in for all users.
+- `POST /publish` — `Bearer <ADMIN password>`, `{ title, source, id? }` → `{ ok, id }`.
+  Stores a module live for everyone (no TTL, until unpublished).
+- `POST /unpublish` — `Bearer <ADMIN password>`, `{ id }` → `{ ok }`.
+  `/reports`, `/submissions`, `/publish`, `/unpublish` need the admin password.
 
 Limits: 8 requests/min/IP, 300/day globally (vars in wrangler.toml), answer ≤ 500
 chars, prompt built server-side only.

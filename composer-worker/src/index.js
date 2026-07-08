@@ -237,6 +237,28 @@ async function listSubmissions(env) {
   return out;
 }
 
+// ── Published modules (admin publishes; served publicly to every app on load) ──
+function pubSlug(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'module';
+}
+async function publishModule(env, b) {
+  if (!env.RATE_KV) return null;
+  const id = (b.id && String(b.id).slice(0, 200)) || ('pub-' + pubSlug(b.title));
+  const rec = { id, title: String(b.title || '').slice(0, MAX.title), source: String(b.source || '').slice(0, MAX.source), ts: new Date().toISOString() };
+  await env.RATE_KV.put('pub:' + id, JSON.stringify(rec)); // no TTL — lives until unpublished
+  return id;
+}
+async function listPublished(env) {
+  if (!env.RATE_KV) return [];
+  const list = await env.RATE_KV.list({ prefix: 'pub:', limit: 200 });
+  const out = [];
+  for (const k of list.keys) {
+    const raw = await env.RATE_KV.get(k.name);
+    if (raw) { try { out.push(JSON.parse(raw)); } catch (e) { /* skip corrupt */ } }
+  }
+  return out;
+}
+
 // lightweight per-IP guard so a runaway client can't flood KV (separate from
 // the grading counters — reports/submissions must never eat the Gemini quota)
 async function reportRateOk(env, ip) {
@@ -421,6 +443,10 @@ export default {
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (url.pathname === '/' && request.method === 'GET') return json(200, { ok: true, service: 'greek-composer-worker' }, cors);
+    // public: every app fetches published modules on load — no password
+    if (url.pathname === '/published' && request.method === 'GET') {
+      return json(200, { published: await listPublished(env) }, cors);
+    }
 
     const isUsage = url.pathname === '/usage' && request.method === 'GET';
     const isGrade = url.pathname === '/grade' && request.method === 'POST';
@@ -428,7 +454,9 @@ export default {
     const isReports = url.pathname === '/reports' && request.method === 'GET';
     const isSubmit = url.pathname === '/submit' && request.method === 'POST';
     const isSubmissions = url.pathname === '/submissions' && request.method === 'GET';
-    if (!isUsage && !isGrade && !isReport && !isReports && !isSubmit && !isSubmissions) {
+    const isPublish = url.pathname === '/publish' && request.method === 'POST';
+    const isUnpublish = url.pathname === '/unpublish' && request.method === 'POST';
+    if (!isUsage && !isGrade && !isReport && !isReports && !isSubmit && !isSubmissions && !isPublish && !isUnpublish) {
       return json(404, { error: 'not found' }, cors);
     }
 
@@ -443,6 +471,21 @@ export default {
     if (isReports || isSubmissions) {
       if (!(await adminOk(token, env))) return json(401, { error: 'wrong admin password' }, cors);
       return json(200, isReports ? { reports: await listReports(env) } : { submissions: await listSubmissions(env) }, cors);
+    }
+
+    // publishing / unpublishing a module for everyone — admin only
+    if (isPublish || isUnpublish) {
+      if (!(await adminOk(token, env))) return json(401, { error: 'wrong admin password' }, cors);
+      let pbody;
+      try { pbody = await request.json(); } catch (e) { return json(400, { error: 'invalid JSON' }, cors); }
+      if (isPublish) {
+        const perr = validateSubmission(pbody);
+        if (perr) return json(400, { error: perr }, cors);
+        return json(200, { ok: true, id: await publishModule(env, pbody) }, cors);
+      }
+      if (!pbody || typeof pbody.id !== 'string' || !pbody.id) return json(400, { error: 'id required' }, cors);
+      if (env.RATE_KV) await env.RATE_KV.delete('pub:' + pbody.id.slice(0, 200));
+      return json(200, { ok: true }, cors);
     }
 
     // everything else (grade, usage, submitting a report) uses the shared password

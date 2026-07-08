@@ -16,6 +16,6 @@ kv_namespaces = [
 # Add the production site origin(s) here after deciding hosting (Netlify/Vercel/GitHub Pages).
 ALLOWED_ORIGINS = "https://prlygrly.github.io,http://localhost:8765,http://127.0.0.1:8765"
 GEMINI_MODEL = "gemini-3.1-flash-lite"     # per-question model: 500 RPD free tier (AI Studio dashboard, 2026-07)
-GEMINI_MODEL_BATCH = "gemini-3-flash"      # whole-module batch model: smarter, 20 RPD free — 1 request grades a whole module
+GEMINI_MODEL_BATCH = "gemini-3.5-flash"    # whole-module batch model: smarter; 1 request grades a whole module (gemini-3-flash was retired → 404)
 RATE_PER_MIN = "8"     # per-IP grading requests per minute
 RATE_PER_DAY = "300"   # global grading requests per day (protects the free Gemini quota)
