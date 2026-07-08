@@ -52,6 +52,8 @@ the app's browser console set:
 - `GET /submissions` — `Bearer <ADMIN password>` → recent module submissions.
 - `GET /published` — **public, no auth** → modules the author published; every
   app fetches this on load and merges them in for all users.
+- `GET /public-models` — **public, no auth** → `{ quick, batch }`, the models the
+  author uses; BYOK users see these tagged "recommended" in their model picker.
 - `POST /publish` — `Bearer <ADMIN password>`, `{ title, source, id? }` → `{ ok, id }`.
   Stores a module live for everyone (no TTL, until unpublished).
 - `POST /unpublish` — `Bearer <ADMIN password>`, `{ id }` → `{ ok }`.

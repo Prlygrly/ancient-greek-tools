@@ -419,7 +419,10 @@ header p{font-size:14px;color:var(--ink-faint)}
           <button type="button" class="pw-eye" onclick="togglePw('setKey', this)" aria-label="Show API key" aria-pressed="false">&#128065;</button>
         </div>
         <label class="set-remember"><input type="checkbox" id="setRemember"> Remember the key in this browser. Anyone using this browser profile could read it &mdash; leave unchecked on shared computers (kept only until the tab closes).</label>
-        <input type="text" class="set-input" id="setModel" placeholder="Model (default: gemini-3.1-flash-lite)" autocomplete="off" spellcheck="false">
+        <select class="set-input" id="setModelSelect" onchange="onModelSelectChange()" onclick="event.stopPropagation()"></select>
+        <button type="button" class="btn-ghost reports-btn" id="detectModelsBtn" onclick="event.stopPropagation();detectByokModels()">Detect models from my key</button>
+        <div class="reports-view" id="byokModelStatus"></div>
+        <input type="text" class="set-input" id="setModel" placeholder="Custom model id (e.g. gemini-3.5-flash)" autocomplete="off" spellcheck="false" style="display:none">
         <div class="set-choice">
           <label><input type="radio" name="byokGradeMode" value="perq"> <span><strong>Per question</strong> &mdash; graded as you answer (one API request each; watch your model's daily request limit)</span></label>
           <label><input type="radio" name="byokGradeMode" value="batch"> <span><strong>Whole module</strong> &mdash; graded together at the end (one API request per module; friendlier to low request limits)</span></label>
@@ -1740,7 +1743,11 @@ function openSettings(){
   setRadioGroup('byokGradeMode', settings.gradeMode);
   $('setPassword').value = settings.password || '';
   $('setKey').value = getGeminiKey();
-  $('setModel').value = settings.byokModel === DEFAULT_BYOK_MODEL ? '' : settings.byokModel;
+  $('setModel').value = settings.byokModel || '';
+  $('byokModelStatus').textContent = '';
+  // populate the BYOK model dropdown (recommended from the author, detect adds the rest)
+  buildModelOptions([], recommendedByok, settings.byokModel);
+  loadRecommendedModels().then(function(){ buildModelOptions([], recommendedByok, settings.byokModel); });
   var remembered = false;
   try{ remembered = !!localStorage.getItem(KEY_STORE); }catch(e){}
   $('setRemember').checked = remembered;
@@ -1888,6 +1895,60 @@ function unpublishModule(id, btn){
     .catch(function(e){ btn.disabled = false; btn.textContent = e === 'auth' ? 'Admin password rejected' : 'Retry'; });
 }
 
+// ── BYOK model picker: dropdown of the user's own available models ──
+var recommendedByok = []; // the author's models, fetched from the public endpoint
+function loadRecommendedModels(){
+  if(!WORKER_URL) return Promise.resolve();
+  return fetch(WORKER_URL.replace(/\/+$/, '') + '/public-models')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){ if(d){ recommendedByok = [d.quick, d.batch].filter(Boolean); } })
+    .catch(function(){});
+}
+// list the models THIS key can use for generateContent (browser → Gemini directly)
+function listGeminiModels(key){
+  return fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
+    headers: { 'x-goog-api-key': key }
+  }).then(function(r){
+    if(r.status === 401 || r.status === 403) return { error: 'Key rejected — check it.' };
+    if(!r.ok) return { error: 'Couldn’t list models (' + r.status + ').' };
+    return r.json().then(function(d){
+      var ids = (d.models || []).filter(function(m){
+        return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0;
+      }).map(function(m){ return String(m.name || '').replace(/^models\//, ''); });
+      return { ids: ids };
+    });
+  }).catch(function(){ return { error: 'Couldn’t reach Gemini.' }; });
+}
+function onModelSelectChange(){
+  $('setModel').style.display = ($('setModelSelect').value === '__custom__') ? '' : 'none';
+}
+function buildModelOptions(detected, recommended, current){
+  var sel = $('setModelSelect');
+  sel.textContent = '';
+  var seen = {};
+  var addOpt = function(id, label){
+    if(!id || seen[id]) return; seen[id] = 1;
+    var o = document.createElement('option'); o.value = id; o.textContent = label; sel.appendChild(o);
+  };
+  (recommended || []).forEach(function(id){ addOpt(id, id + ' (recommended)'); });
+  (detected || []).forEach(function(id){ addOpt(id, id); });
+  var co = document.createElement('option'); co.value = '__custom__'; co.textContent = 'Custom / other model…'; sel.appendChild(co);
+  if(current && seen[current]) sel.value = current;
+  else if(current) sel.value = '__custom__';           // a model not in the list → custom
+  else sel.value = (recommended && recommended[0]) || '__custom__';
+  onModelSelectChange();
+}
+function detectByokModels(){
+  var key = $('setKey').value.trim(), status = $('byokModelStatus');
+  if(!key){ status.textContent = 'Enter your API key first.'; return; }
+  status.textContent = 'Detecting…';
+  listGeminiModels(key).then(function(res){
+    if(res.error){ status.textContent = res.error; return; }
+    status.textContent = res.ids.length + ' models available on your key.';
+    buildModelOptions(res.ids, recommendedByok, settings.byokModel);
+  });
+}
+
 // admin: view/change which Gemini models grading uses (your shared key)
 function loadModelsConfig(){
   var pw = $('setAdminPw').value.trim();
@@ -1979,7 +2040,10 @@ function saveSettings(){
   var groupName = mode === 'byok' ? 'byokGradeMode' : 'pwGradeMode';
   var gm = (document.querySelector('input[name="' + groupName + '"]:checked') || {}).value;
   settings.gradeMode = gm === 'batch' ? 'batch' : 'perq';
-  settings.byokModel = $('setModel').value.trim() || DEFAULT_BYOK_MODEL;
+  var pickedModel = $('setModelSelect').value;
+  settings.byokModel = (pickedModel === '__custom__' || !pickedModel)
+    ? ($('setModel').value.trim() || DEFAULT_BYOK_MODEL)
+    : pickedModel;
   persistSettings();
   setGeminiKey(mode === 'byok' ? key : '', $('setRemember').checked);
   updateAiDot();

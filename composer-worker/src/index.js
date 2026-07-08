@@ -510,6 +510,10 @@ export default {
     if (url.pathname === '/published' && request.method === 'GET') {
       return json(200, { published: await listPublished(env) }, cors);
     }
+    // public: the models the author uses, so BYOK users can see the recommended ones
+    if (url.pathname === '/public-models' && request.method === 'GET') {
+      return json(200, await getModels(env), cors);
+    }
 
     const isUsage = url.pathname === '/usage' && request.method === 'GET';
     const isGrade = url.pathname === '/grade' && request.method === 'POST';
