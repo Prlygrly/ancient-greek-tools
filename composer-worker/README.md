@@ -57,6 +57,10 @@ the app's browser console set:
 - `POST /unpublish` — `Bearer <ADMIN password>`, `{ id }` → `{ ok }`.
 - `GET /incidents` — `Bearer <ADMIN password>` → times a configured model 404'd
   and grading fell back to the other model (so you know to update a model ID).
+- `GET /models` — `Bearer <ADMIN password>` → current + default model ids.
+- `POST /models` — `Bearer <ADMIN password>`, `{ quick, batch }` → overrides the
+  grading models live (empty string reverts to the wrangler.toml default). No
+  redeploy needed. The `GEMINI_MODEL*` vars are the fallback defaults.
 
 Grading falls back automatically: if the configured model 404s (retired), the
 worker retries once with the other configured model and tags the response with

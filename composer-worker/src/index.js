@@ -427,6 +427,32 @@ async function callModel(env, model, prompt, batch, count) {
   return out;
 }
 
+// Model config: admin can override the per-question / batch model IDs from the
+// dashboard (stored in KV), falling back to the wrangler.toml vars, then to a
+// hardcoded default. So a retired model is a one-field fix, no redeploy.
+function validModelId(s) { return typeof s === 'string' && /^[A-Za-z0-9.\-]{0,100}$/.test(s); }
+async function readModelOverride(env) {
+  if (!env.RATE_KV) return {};
+  try { const raw = await env.RATE_KV.get('cfg:models'); if (raw) return JSON.parse(raw) || {}; } catch (e) { /* ignore */ }
+  return {};
+}
+function modelDefaults(env) {
+  const quick = env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+  return { quick, batch: env.GEMINI_MODEL_BATCH || quick };
+}
+async function getModels(env) {
+  const ov = await readModelOverride(env), def = modelDefaults(env);
+  return { quick: ov.quick || def.quick, batch: ov.batch || def.batch };
+}
+async function modelsInfo(env) {
+  const ov = await readModelOverride(env), def = modelDefaults(env);
+  return {
+    quick: ov.quick || def.quick, batch: ov.batch || def.batch,
+    quickDefault: def.quick, batchDefault: def.batch,
+    quickOverride: ov.quick || '', batchOverride: ov.batch || ''
+  };
+}
+
 // admin incident log — records when a configured model 404s and we fall back,
 // so the author knows a model ID needs updating (30-day TTL)
 async function storeIncident(env, rec) {
@@ -456,9 +482,9 @@ async function callGemini(env, prompt, batch, count) {
     const data = batch ? Array.from({ length: count }, (_, i) => fakeRubric(i + 1)) : fakeRubric(0);
     return { data, fellBack: null };
   }
-  const quick = env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
-  const primary = batch ? (env.GEMINI_MODEL_BATCH || quick) : quick;
-  const fallback = batch ? quick : (env.GEMINI_MODEL_BATCH || quick);
+  const m = await getModels(env);
+  const primary = batch ? m.batch : m.quick;
+  const fallback = batch ? m.quick : m.batch;
   try {
     return { data: await callModel(env, primary, prompt, batch, count), fellBack: null };
   } catch (e) {
@@ -494,7 +520,9 @@ export default {
     const isPublish = url.pathname === '/publish' && request.method === 'POST';
     const isUnpublish = url.pathname === '/unpublish' && request.method === 'POST';
     const isIncidents = url.pathname === '/incidents' && request.method === 'GET';
-    if (!isUsage && !isGrade && !isReport && !isReports && !isSubmit && !isSubmissions && !isPublish && !isUnpublish && !isIncidents) {
+    const isGetModels = url.pathname === '/models' && request.method === 'GET';
+    const isSetModels = url.pathname === '/models' && request.method === 'POST';
+    if (!isUsage && !isGrade && !isReport && !isReports && !isSubmit && !isSubmissions && !isPublish && !isUnpublish && !isIncidents && !isGetModels && !isSetModels) {
       return json(404, { error: 'not found' }, cors);
     }
 
@@ -505,12 +533,25 @@ export default {
     const token = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : '';
     if (!token || token.length > MAX.password) return json(401, { error: 'wrong password' }, cors);
 
-    // viewing reports / submissions / incidents needs the admin password
-    if (isReports || isSubmissions || isIncidents) {
+    // viewing reports / submissions / incidents / model config needs the admin password
+    if (isReports || isSubmissions || isIncidents || isGetModels) {
       if (!(await adminOk(token, env))) return json(401, { error: 'wrong admin password' }, cors);
       if (isReports) return json(200, { reports: await listReports(env) }, cors);
       if (isSubmissions) return json(200, { submissions: await listSubmissions(env) }, cors);
-      return json(200, { incidents: await listIncidents(env) }, cors);
+      if (isIncidents) return json(200, { incidents: await listIncidents(env) }, cors);
+      return json(200, await modelsInfo(env), cors);
+    }
+
+    // change which models grading uses — admin only, takes effect immediately
+    if (isSetModels) {
+      if (!(await adminOk(token, env))) return json(401, { error: 'wrong admin password' }, cors);
+      let mbody;
+      try { mbody = await request.json(); } catch (e) { return json(400, { error: 'invalid JSON' }, cors); }
+      const quick = (mbody && mbody.quick != null) ? String(mbody.quick).trim() : '';
+      const batch = (mbody && mbody.batch != null) ? String(mbody.batch).trim() : '';
+      if (!validModelId(quick) || !validModelId(batch)) return json(400, { error: 'model ids may contain only letters, digits, . and -' }, cors);
+      if (env.RATE_KV) await env.RATE_KV.put('cfg:models', JSON.stringify({ quick, batch })); // empty = revert to default
+      return json(200, await modelsInfo(env), cors);
     }
 
     // publishing / unpublishing a module for everyone — admin only
