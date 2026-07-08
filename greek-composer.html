@@ -1553,6 +1553,11 @@ function showReview(err, hideContinue){
       item.appendChild(el('div', 'rev-flat', '~ Right words — accent or breathing slips.'));
     } else {
       item.appendChild(el('div', 'rev-flat', 'Automated comparison only' + (err ? '' : ' — not AI-graded') + '.'));
+      // show the word-by-word breakdown, recomputed from the saved answer
+      if(q.answers && q.answers.length){
+        var h = heuristicGrade(fold(p.answers[i]), q);
+        if(h.best) item.appendChild(buildHeuristicDetail(h.best));
+      }
     }
     list.appendChild(item);
   });

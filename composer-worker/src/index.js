@@ -490,7 +490,9 @@ export default {
     } catch (e) {
       console.error('grading failed:', e && e.message);
       if (e && e.quota) return json(429, { error: 'The AI’s free quota is used up for now', kind: 'quota' }, cors);
-      return json(502, { error: 'grading failed upstream' }, cors);
+      // surface the upstream reason so failures are diagnosable from the client
+      const detail = e && e.message ? String(e.message).slice(0, 200) : 'unknown';
+      return json(502, { error: 'grading failed upstream (' + detail + ')' }, cors);
     }
   }
 };
