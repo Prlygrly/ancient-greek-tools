@@ -473,9 +473,22 @@ async function listIncidents(env) {
   return out;
 }
 
-// Picks the configured model for the request, and if it 404s (retired), retries
-// ONCE with the other configured model so grading fails soft. Returns
-// { data, fellBack } where fellBack is the model actually used, or null.
+// a 503/500 is a transient upstream overload, not a config problem
+function isTransient(e) { return e && (e.status === 503 || e.status === 500); }
+// call a model, retrying ONCE after a short wait if it's transiently overloaded
+async function callModelRetry(env, model, prompt, batch, count) {
+  try {
+    return await callModel(env, model, prompt, batch, count);
+  } catch (e) {
+    if (!isTransient(e)) throw e;
+    await new Promise(r => setTimeout(r, 1500));
+    return await callModel(env, model, prompt, batch, count); // one retry; may throw again
+  }
+}
+
+// Picks the configured model. If it 404s (retired) or stays overloaded (503/500
+// after a retry), retries with the other configured model so grading fails soft.
+// Returns { data, fellBack } where fellBack is the model used, or null.
 async function callGemini(env, prompt, batch, count) {
   if (env.TEST_FAKE_LLM === '1') {
     // local-dev escape hatch (.dev.vars) — never set in production
@@ -486,12 +499,13 @@ async function callGemini(env, prompt, batch, count) {
   const primary = batch ? m.batch : m.quick;
   const fallback = batch ? m.quick : m.batch;
   try {
-    return { data: await callModel(env, primary, prompt, batch, count), fellBack: null };
+    return { data: await callModelRetry(env, primary, prompt, batch, count), fellBack: null };
   } catch (e) {
-    // only a 404 means the model is gone — quota/format errors shouldn't switch models
-    if (e && e.status === 404 && fallback && fallback !== primary) {
-      await storeIncident(env, { model: primary, status: 404, batch: !!batch, action: 'fell back to ' + fallback });
-      const data = await callModel(env, fallback, prompt, batch, count); // may still throw
+    // model gone (404) or still overloaded (503/500) → try the other model; other
+    // errors (400, quota) shouldn't switch models
+    if ((e.status === 404 || isTransient(e)) && fallback && fallback !== primary) {
+      await storeIncident(env, { model: primary, status: e.status || '?', batch: !!batch, action: 'fell back to ' + fallback });
+      const data = await callModel(env, fallback, prompt, batch, count); // single shot; may still throw
       return { data, fellBack: fallback };
     }
     throw e;
@@ -619,7 +633,9 @@ export default {
     } catch (e) {
       console.error('grading failed:', e && e.message);
       if (e && e.quota) return json(429, { error: 'The AI’s free quota is used up for now', kind: 'quota' }, cors);
-      // surface the upstream reason so failures are diagnosable from the client
+      // transient overload (both models busy) — tell the user to just retry
+      if (isTransient(e)) return json(503, { error: 'The AI is briefly overloaded — please try again in a moment.', kind: 'busy' }, cors);
+      // surface the upstream reason so other failures are diagnosable from the client
       const detail = e && e.message ? String(e.message).slice(0, 200) : 'unknown';
       return json(502, { error: 'grading failed upstream (' + detail + ')' }, cors);
     }
